@@ -32,7 +32,8 @@
       "Bash(python:*)",
       "Bash(python3:*)",
       "Update(*)",
-      "WebSearch"
+      "WebSearch",
+      "mcp__open-pencil"
     ],
     "deny": []
   },
