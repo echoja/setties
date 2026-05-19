@@ -196,7 +196,8 @@ function gbrename() {
 
 # git switch
 function gs() {
-  git branch | fzf | xargs -I {} git switch {}
+  # git branch | fzf | xargs -I {} git switch {}
+  git status -sb
 }
 
 # go to git root
