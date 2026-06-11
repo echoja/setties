@@ -32,6 +32,10 @@
       "description": "Claude Code stop-hook notification script"
     },
     {
+      "key": ".claude/statusline-command.sh",
+      "description": "Claude Code status line script"
+    },
+    {
       "key": ".claude/CLAUDE.md",
       "description": "User-scope Claude Code instructions"
     },
