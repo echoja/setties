@@ -58,20 +58,29 @@ action is for the web UI only.
   inflected form (`apply` → `applied`), pick the inflected form
   **as the answer** and mention the inflection in the explanation.
 
-- **`--question`** — a single fill-in-the-blank sentence with `___`
-  as the only blank. The answer must be the most natural completion.
+- **`--question`** — a single fill-in-the-blank sentence with one or
+  more `___` blanks for the target answer. Use one blank when the answer
+  fits naturally as a continuous span. Use multiple blanks when the
+  target expression's important words are separated by natural but
+  nonessential context words or modifiers. The answer must complete the
+  blanks in order and be the most natural completion.
   Make collocation fit the top priority: use a real, high-frequency
   collocation or grammatical frame for the target word, such as
   verb+noun, adjective+noun, adverb+adjective, or a common preposition
-  pattern. Let that collocation make the answer feel inevitable. Match the surrounding
-  words' register and tone to the target word and context
-  (formal/informal, academic, business, casual, emotional, etc.).
-  Prefer 11–22 words, counting the blank as one word;
-  shorter is acceptable when the collocation is still natural, but
-  avoid exceeding 22 words unless the context truly requires it. Do not
-  add extra background just to make the
-  sentence longer. If the user provided context, reflect the situation
-  or tone naturally without explaining the context.
+  pattern. Let that collocation make the answer feel inevitable. Match
+  the surrounding words' register and tone to the target word and
+  context (formal/informal, academic, business, casual, emotional, etc.).
+  Prefer 11–22 words, counting each blank as one word; shorter is
+  acceptable when the collocation is still natural, but avoid exceeding
+  22 words unless the context truly requires it. Do not add extra
+  background just to make the sentence longer. If the user provided
+  context, reflect the situation or tone naturally without explaining the
+  context.
+
+  Example: for answer `strike a balance`, prefer a sentence like `It can
+  be difficult to ___ healthy ___ between your demanding career and your
+  personal life.` because `healthy` is useful context but not part of the
+  target expression.
 
 - **`--hint`** — 2–3 high-priority synonyms or paraphrases, preferably
   comma-separated and under 12 words total. Do not include the answer
@@ -100,11 +109,12 @@ Convex, edit files, or mutate any data. Ask it to return strict JSON:
 }
 ```
 
-The parent agent validates the result before saving: exactly one `___`,
-8–22 question words unless context truly requires otherwise, natural
-collocation prioritized over easy vocabulary, answer is the best
-completion, hint is under 12 words and does not contain the answer, and
-explanation is 10–50 words. If the
+The parent agent validates the result before saving: one or more `___`
+blanks, multiple blanks only when they hide target-answer material while
+leaving useful non-answer words visible, 8–22 question words unless
+context truly requires otherwise, natural collocation prioritized over
+easy vocabulary, answer is the best completion, hint is under 12 words
+and does not contain the answer, and explanation is 10–50 words. If the
 result is weak, ask a fresh subagent for a new draft or revise only minor
 issues locally. The parent agent alone calls `ep cards create` or
 `ep cards replace` and confirms the saved card.
