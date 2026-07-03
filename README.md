@@ -66,7 +66,7 @@ sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser ech
 ## Source of truth
 
 - 설치 대상·설치 명령·사용/비사용 이유는 전부 `scripts/deps.json`이 단일 기준입니다. `./v`가 각 엔트리의 `install`과 `notes`를 출력하므로, 이 README는 "어디를 봐야 하는지"만 가리키도록 유지합니다.
-- 예: 컨테이너 런타임 선택(왜 Docker Desktop인지, 왜 podman/colima를 설치하지 말아야 하는지)은 `docker` 엔트리의 `notes`에 담겨 있습니다.
+- 예: 컨테이너 런타임 선택(왜 Colima인지, 왜 Docker Desktop/podman을 설치하지 말아야 하는지)은 `docker` 엔트리의 `notes`에 담겨 있습니다.
 
 ## Pre-commit
 

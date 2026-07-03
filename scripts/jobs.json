@@ -14,9 +14,9 @@
       }
     },
     {
-      "label": "com.echoja.brew-upgrade-claude",
-      "description": "Daily auto-upgrade of Claude CLI via Homebrew",
-      "script": "scripts/brew-upgrade-claude.sh",
+      "label": "com.echoja.brew-upgrade",
+      "description": "Daily auto-upgrade of Homebrew packages",
+      "script": "scripts/brew-upgrade.sh",
       "schedule": {
         "hour": 10,
         "minute": 0
