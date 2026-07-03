@@ -128,10 +128,7 @@
       "label": "codex",
       "kind": "command",
       "target": "codex",
-      "depends": [
-        "npm"
-      ],
-      "install": "npm install -g @openai/codex"
+      "install": "curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh"
     },
     {
       "label": "terraform",
