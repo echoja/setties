@@ -1,8 +1,30 @@
 repos:
   - repo: local
     hooks:
+      - id: require-current-upstream
+        name: Require current upstream before committing
+        entry: scripts/require-current-upstream.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
       - id: no-hardcoded-home-paths
         name: Prevent hardcoded home paths in .zshrc
         entry: scripts/check-hardcoded-home-paths.sh
         language: system
         files: (^|/)\.zshrc$
+        stages: [pre-commit]
+      - id: verify-after-pull-merge
+        name: Run ./v after pull/merge
+        entry: scripts/verify-after-pull.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [post-merge]
+      - id: verify-after-pull-rebase
+        name: Run ./v after pull/rebase
+        entry: scripts/verify-after-pull.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [post-rewrite]

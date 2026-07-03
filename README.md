@@ -70,8 +70,12 @@ sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser ech
 
 ## Pre-commit
 
+- 커밋 전에 `git fetch --prune <upstream remote>`를 실행하고, 현재 브랜치가 upstream보다 뒤처져 있으면 커밋을 막습니다.
+- 네트워크 오류로 fetch를 못 해도 커밋을 막습니다. 의도적으로 최신 여부를 확인할 수 없으면 실패하도록 둔 정책입니다.
 - `.zshrc`에 `/Users/<name>` 또는 `/home/<name>` 형태의 하드코딩된 home 경로가 들어가면 실패합니다.
 - `$HOME`을 사용하도록 강제합니다.
 - 설치 후 훅 등록:
   - `brew install pre-commit`
-  - `pre-commit install`
+  - `pre-commit install --hook-type pre-commit --hook-type post-merge --hook-type post-rewrite`
+
+`post-merge`/`post-rewrite` 훅은 `git pull` 또는 `git pull --rebase` 이후 자동으로 `./v`를 실행합니다.
