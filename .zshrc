@@ -4,8 +4,10 @@ if [[ -n "$SSH_CONNECTION" ]] && [[ -z "$TMUX" ]] && command -v tmux &>/dev/null
   tmux attach -t remote 2>/dev/null || tmux new -s remote
 fi
 
+echo "Loading .zshrc..."
+
 # Kiro CLI pre block. Keep at the top of this file.
-[[ -f "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.pre.zsh"
+# [[ -f "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.pre.zsh"
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -13,6 +15,8 @@ fi
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
+
+echo "Loading .zshrc... done"
 
 export HISTSIZE=1000000
 export SAVEHIST=1000000
@@ -45,6 +49,9 @@ if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighti
 fi
 
 plugins=(git zsh-syntax-highlighting)
+
+
+echo "Loading Oh My Zsh..."
 
 source $ZSH/oh-my-zsh.sh
 
@@ -148,6 +155,8 @@ alias tt="tv text"
 # eval "$(tv init zsh)"
 
 alias jenkins="java -jar ~/jenkins-cli.jar -s https://jenkins.test.purple.io/ -ssh -user echoja"
+
+echo "Loading zoxide..."
 
 # zoxide: cd 더 나은 버전
 # brew install zoxide
@@ -317,13 +326,13 @@ export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
 
 # Kiro CLI post block. Keep at the bottom of this file.
-[[ -f "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh"
+# [[ -f "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh"
 
 eval "$(mise activate zsh)"
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 # Codenbutter shared functions (pb, saml-login, etc.)
-[[ -f "${HOME}/codenbutter-knowledge-base/scripts/shell-functions.sh" ]] && source "${HOME}/codenbutter-knowledge-base/scripts/shell-functions.sh"
+# [[ -f "${HOME}/codenbutter-knowledge-base/scripts/shell-functions.sh" ]] && source "${HOME}/codenbutter-knowledge-base/scripts/shell-functions.sh"
 
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:${HOME}/.lmstudio/bin"
