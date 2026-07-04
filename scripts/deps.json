@@ -332,6 +332,12 @@
       "install": "brew install gh"
     },
     {
+      "label": "gcx",
+      "kind": "command",
+      "target": "gcx",
+      "install": "curl -fsSL https://raw.githubusercontent.com/grafana/gcx/main/scripts/install.sh | sh"
+    },
+    {
       "label": "terminal-notifier",
       "kind": "command",
       "target": "terminal-notifier",
