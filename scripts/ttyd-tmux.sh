@@ -3,10 +3,15 @@ set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+export LANG="${LANG:-ko_KR.UTF-8}"
+export LC_CTYPE="${LC_CTYPE:-ko_KR.UTF-8}"
+export LC_ALL="${LC_ALL:-ko_KR.UTF-8}"
+
 session="${TTYD_TMUX_SESSION:-remote}"
 host="${TTYD_HOST:-127.0.0.1}"
 port="${TTYD_PORT:-7681}"
 ttyd_bin="${TTYD_BIN:-ttyd}"
+font_family="${TTYD_FONT_FAMILY:-Menlo, Monaco, 'Apple SD Gothic Neo', 'Apple Color Emoji', monospace}"
 app_tailscale_bin="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 
 tailscale_bin() {
@@ -50,6 +55,9 @@ args=(
   -i "$host"
   -p "$port"
   -W
+  -T xterm-256color
+  -t rendererType=canvas
+  -t "fontFamily=$font_family"
 )
 
 if [[ -n "${TTYD_CREDENTIAL:-}" ]]; then

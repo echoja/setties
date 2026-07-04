@@ -43,7 +43,12 @@
       "script": "scripts/ttyd-tmux.sh",
       "schedule": {},
       "environment": {
+        "LANG": "ko_KR.UTF-8",
+        "LC_ALL": "ko_KR.UTF-8",
+        "LC_CTYPE": "ko_KR.UTF-8",
         "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "TERM": "xterm-256color",
+        "TTYD_FONT_FAMILY": "Menlo, Monaco, 'Apple SD Gothic Neo', 'Apple Color Emoji', monospace",
         "TTYD_HOST": "tailscale",
         "TTYD_PORT": "7681",
         "TTYD_TMUX_SESSION": "remote"

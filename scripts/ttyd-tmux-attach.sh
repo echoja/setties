@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export LANG="${LANG:-ko_KR.UTF-8}"
+export LC_CTYPE="${LC_CTYPE:-ko_KR.UTF-8}"
+export LC_ALL="${LC_ALL:-ko_KR.UTF-8}"
+
 session="${TTYD_TMUX_SESSION:-remote}"
 
 if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -12,4 +16,4 @@ if ! tmux has-session -t "$session" 2>/dev/null; then
   exit 1
 fi
 
-exec tmux attach-session -t "$session"
+exec tmux -u attach-session -t "$session"
