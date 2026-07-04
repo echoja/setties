@@ -287,6 +287,15 @@
       "install": "https://tailscale.com/download"
     },
     {
+      "label": "tailscale-cli",
+      "kind": "file",
+      "target": "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+      "depends": [
+        "tailscale"
+      ],
+      "install": "https://tailscale.com/download"
+    },
+    {
       "label": "argocd",
       "kind": "command",
       "target": "argocd",
