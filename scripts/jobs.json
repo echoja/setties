@@ -48,9 +48,29 @@
         "LC_CTYPE": "ko_KR.UTF-8",
         "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
         "TERM": "xterm-256color",
+        "TTYD_BASE_PATH": "/ttyd",
         "TTYD_FONT_FAMILY": "Menlo, Monaco, 'Apple SD Gothic Neo', 'Apple Color Emoji', monospace",
-        "TTYD_HOST": "tailscale",
-        "TTYD_PORT": "7681",
+        "TTYD_HOST": "127.0.0.1",
+        "TTYD_PORT": "7682",
+        "TTYD_TMUX_SESSION": "remote"
+      },
+      "run_at_load": true,
+      "keep_alive": true
+    },
+    {
+      "label": "com.echoja.ttyd-mobile-control",
+      "description": "Mobile browser wrapper with tmux scroll controls for ttyd",
+      "script": "scripts/ttyd-mobile-control.sh",
+      "schedule": {},
+      "environment": {
+        "LANG": "ko_KR.UTF-8",
+        "LC_ALL": "ko_KR.UTF-8",
+        "LC_CTYPE": "ko_KR.UTF-8",
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "TTYD_BACKEND_HOST": "127.0.0.1",
+        "TTYD_MOBILE_HOST": "tailscale",
+        "TTYD_MOBILE_PORT": "7681",
+        "TTYD_PORT": "7682",
         "TTYD_TMUX_SESSION": "remote"
       },
       "run_at_load": true,

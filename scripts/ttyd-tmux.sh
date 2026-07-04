@@ -9,9 +9,10 @@ export LC_ALL="${LC_ALL:-ko_KR.UTF-8}"
 
 session="${TTYD_TMUX_SESSION:-remote}"
 host="${TTYD_HOST:-127.0.0.1}"
-port="${TTYD_PORT:-7681}"
+port="${TTYD_PORT:-7682}"
 ttyd_bin="${TTYD_BIN:-ttyd}"
 font_family="${TTYD_FONT_FAMILY:-Menlo, Monaco, 'Apple SD Gothic Neo', 'Apple Color Emoji', monospace}"
+base_path="${TTYD_BASE_PATH:-}"
 app_tailscale_bin="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 
 tailscale_bin() {
@@ -62,6 +63,10 @@ args=(
 
 if [[ -n "${TTYD_CREDENTIAL:-}" ]]; then
   args+=(-c "$TTYD_CREDENTIAL")
+fi
+
+if [[ -n "$base_path" ]]; then
+  args+=(-b "$base_path")
 fi
 
 exec "$ttyd_bin" "${args[@]}" "$repo_dir/scripts/ttyd-tmux-attach.sh"
