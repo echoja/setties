@@ -32,3 +32,8 @@
   2. If adding a new symlinked file, register its source path and home-directory target in `scripts/links.json`.
   3. Run `cd ~/settings && ./v` to verify everything is correct.
   4. Commit and push with `cd ~/settings && git add -A && git commit -m "<message>" && git push`.
+
+## Basana Obsidian Vault
+
+- When the user says "basana 커밋푸시" or asks to commit/push Basana, use the iCloud Obsidian vault at `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/basana`.
+- Treat that phrase as a request to commit and push all pending Git changes in that vault, unless the user specifies a narrower scope. Check status, stage with `git add -A`, commit with a concise vault-note message, and push the current branch.
