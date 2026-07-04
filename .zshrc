@@ -125,7 +125,7 @@ alias s="source ~/.zshrc"
 alias vz="vim ~/.zshrc"
 
 # .zshrc Visual Studio Code로 열기
-alias cz="code ~/settings"
+alias cz="code ~/setties"
 
 # brew tap hashicorp/tap
 # brew install hashicorp/tap/terraform

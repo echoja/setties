@@ -102,7 +102,7 @@ trust_level = "trusted"
 [projects."/Users/th.kim/Desktop/simple-workflow"]
 trust_level = "trusted"
 
-[projects."/Users/th.kim/settings"]
+[projects."/Users/th.kim/setties"]
 trust_level = "trusted"
 
 [projects."/Users/th.kim/codenbutter-knowledge-base"]
@@ -117,7 +117,7 @@ trust_level = "trusted"
 [projects."/Users/echoja/works/buildtalk"]
 trust_level = "trusted"
 
-[projects."/Users/echoja/settings"]
+[projects."/Users/echoja/setties"]
 trust_level = "trusted"
 
 [projects."/Users/echoja/works"]

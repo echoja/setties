@@ -175,7 +175,7 @@ wheels = [
 ]
 
 [[package]]
-name = "settings"
+name = "setties"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

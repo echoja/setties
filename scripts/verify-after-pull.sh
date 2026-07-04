@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Git runs post-rewrite for both rebase and amend. Only rebase represents the
-# pull/rebase path where we want automatic settings verification.
+# pull/rebase path where we want automatic Setties verification.
 if [[ "${PRE_COMMIT_HOOK_STAGE:-}" == "post-rewrite" && "${1:-}" != "rebase" ]]; then
   exit 0
 fi

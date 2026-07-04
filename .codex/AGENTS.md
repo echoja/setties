@@ -20,18 +20,18 @@
 - Do not proactively save persistent notes or memories.
 - Only write persistent notes when the user explicitly asks to remember something.
 - When the user says "remember this" or "기억해줘", update the durable instruction file for the active tool and scope instead of creating an ad hoc memory file: `AGENTS.md` for Codex, `CLAUDE.md` for Claude.
-- In `~/settings`, edit `.codex/AGENTS.md` as the canonical instruction file; `.claude/CLAUDE.md` points to it.
+- In `~/setties`, edit `.codex/AGENTS.md` as the canonical instruction file; `.claude/CLAUDE.md` points to it.
 
-## Settings Repo (`~/settings`)
+## Setties Repo (`~/setties`)
 
-- The user's dotfiles and system config are managed in `~/settings` (git repo: `echoja/settings`).
-- Dotfiles and global instruction files are symlinked from sources in `~/settings` into `~/` via `scripts/links.json`.
+- The user's dotfiles and system config are managed in `~/setties` (git repo: `echoja/setties`).
+- Dotfiles and global instruction files are symlinked from sources in `~/setties` into `~/` via `scripts/links.json`.
 - Dependencies are tracked in `scripts/deps.json`.
-- When the user wants to save something to settings, such as a new dotfile, config change, dependency, or global instruction file:
-  1. Make the appropriate changes in `~/settings` by editing or adding files and updating `scripts/links.json` or `scripts/deps.json` as needed.
+- When the user wants to save something to Setties, such as a new dotfile, config change, dependency, or global instruction file:
+  1. Make the appropriate changes in `~/setties` by editing or adding files and updating `scripts/links.json` or `scripts/deps.json` as needed.
   2. If adding a new symlinked file, register its source path and home-directory target in `scripts/links.json`.
-  3. Run `cd ~/settings && ./v` to verify everything is correct.
-  4. Commit and push with `cd ~/settings && git add -A && git commit -m "<message>" && git push`.
+  3. Run `cd ~/setties && ./v` to verify everything is correct.
+  4. Commit and push with `cd ~/setties && git add -A && git commit -m "<message>" && git push`.
 
 ## Basana Obsidian Vault
 

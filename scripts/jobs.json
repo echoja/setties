@@ -2,8 +2,8 @@
   "$schema": "./jobs.schema.json",
   "jobs": [
     {
-      "label": "com.echoja.settings-pull",
-      "description": "Daily auto-pull of settings repo",
+      "label": "com.echoja.setties-pull",
+      "description": "Daily auto-pull of Setties repo",
       "script": "scripts/auto-pull.sh",
       "schedule": {
         "hour": 9,

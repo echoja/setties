@@ -21,9 +21,9 @@ if git merge-base --is-ancestor "$LOCAL" "$REMOTE"; then
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] pull complete"
   if command -v terminal-notifier &>/dev/null; then
     terminal-notifier \
-      -title "Settings" \
+      -title "Setties" \
       -message "Auto-pulled latest changes" \
-      -group "com.echoja.settings-pull"
+      -group "com.echoja.setties-pull"
   fi
 else
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] local has diverged from origin/main, skipping"

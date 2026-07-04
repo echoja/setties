@@ -43,9 +43,9 @@ applied with the same conventions.
 There is no automated copy script yet. The manual flow is:
 
 ```bash
-cp -R ~/settings/templates/thoughts/.githooks  <project>/.githooks
-cp -R ~/settings/templates/thoughts/.claude    <project>/.claude
-cp -R ~/settings/templates/thoughts/scripts    <project>/scripts
+cp -R ~/setties/templates/thoughts/.githooks  <project>/.githooks
+cp -R ~/setties/templates/thoughts/.claude    <project>/.claude
+cp -R ~/setties/templates/thoughts/scripts    <project>/scripts
 ```
 
 Then commit the added files in the target project and enable the

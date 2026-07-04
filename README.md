@@ -1,4 +1,4 @@
-# Settings
+# Setties
 
 개인 macOS zsh 환경 설정을 담고 있는 저장소입니다.
 

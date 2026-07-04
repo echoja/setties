@@ -4,7 +4,7 @@ set -euo pipefail
 #
 # Install thoughts/ tools into a target repository.
 #
-# Copies from ~/settings/templates/thoughts/ into the target repo:
+# Copies from ~/setties/templates/thoughts/ into the target repo:
 #   - scripts/validate-frontmatter
 #   - .githooks/pre-commit
 #   - .claude/skills/create-plan/SKILL.md
@@ -24,7 +24,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-TEMPLATE_DIR="$HOME/settings/templates/thoughts"
+TEMPLATE_DIR="$HOME/setties/templates/thoughts"
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <repo-path>"
