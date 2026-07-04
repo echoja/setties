@@ -77,6 +77,14 @@
           "log": {
             "type": "string",
             "description": "Path for stdout/stderr log file"
+          },
+          "run_at_load": {
+            "type": "boolean",
+            "description": "Set launchd RunAtLoad"
+          },
+          "keep_alive": {
+            "type": "boolean",
+            "description": "Set launchd KeepAlive"
           }
         }
       }

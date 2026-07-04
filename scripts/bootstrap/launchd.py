@@ -18,6 +18,8 @@ class JobEntry:
     schedule: dict[str, int]
     environment: dict[str, str] = field(default_factory=dict)
     log: str | None = None
+    run_at_load: bool = False
+    keep_alive: bool = False
 
 
 def load_job_entries() -> list[JobEntry]:
@@ -32,6 +34,8 @@ def load_job_entries() -> list[JobEntry]:
             schedule=item["schedule"],
             environment=item.get("environment", {}),
             log=item.get("log"),
+            run_at_load=item.get("run_at_load", False),
+            keep_alive=item.get("keep_alive", False),
         )
         for item in data["jobs"]
     ]
@@ -66,6 +70,12 @@ def generate_plist(entry: JobEntry) -> dict:
 
     if entry.environment:
         plist["EnvironmentVariables"] = dict(entry.environment)
+
+    if entry.run_at_load:
+        plist["RunAtLoad"] = True
+
+    if entry.keep_alive:
+        plist["KeepAlive"] = True
 
     log_path = entry.log or str(
         Path.home() / "Library" / "Logs" / f"{entry.label}.log"

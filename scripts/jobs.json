@@ -36,6 +36,35 @@
       "environment": {
         "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
       }
+    },
+    {
+      "label": "com.echoja.ttyd-tmux",
+      "description": "Persistent ttyd web terminal attached to an existing tmux session",
+      "script": "scripts/ttyd-tmux.sh",
+      "schedule": {},
+      "environment": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "TTYD_HOST": "127.0.0.1",
+        "TTYD_PORT": "7681",
+        "TTYD_TMUX_SESSION": "remote"
+      },
+      "run_at_load": true,
+      "keep_alive": true
+    },
+    {
+      "label": "com.echoja.tailscale-serve-ttyd",
+      "description": "Keep ttyd privately exposed through Tailscale Serve",
+      "script": "scripts/tailscale-serve-ttyd.sh",
+      "schedule": {
+        "interval": 300
+      },
+      "environment": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "TAILSCALE_BIN": "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+        "TAILSCALE_SERVE_HTTPS_PORT": "443",
+        "TTYD_PORT": "7681"
+      },
+      "run_at_load": true
     }
   ]
 }

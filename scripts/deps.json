@@ -158,6 +158,15 @@
       "install": "brew install tmux"
     },
     {
+      "label": "ttyd",
+      "kind": "command",
+      "target": "ttyd",
+      "depends": [
+        "homebrew"
+      ],
+      "install": "brew install ttyd"
+    },
+    {
       "label": "tv",
       "kind": "command",
       "target": "tv",
