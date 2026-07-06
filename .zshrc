@@ -79,8 +79,8 @@ export PATH="/usr/local/go/bin:$(go env GOPATH)/bin:$PATH"
 # ##############################################################################
 
 
-# vscode shell integration
-[[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
+# vscode shell integration (자동 주입 시 재source 방지)
+[[ "$TERM_PROGRAM" == "vscode" && "$VSCODE_INJECTION" != "1" ]] && . "$(code --locate-shell-integration-path zsh)"
 
 # cinesopa
 alias ssh-cinesopa="ssh -i ~/LightsailDefaultKey-ap-northeast-ezkorry.pem bitnami@13.209.62.19"
