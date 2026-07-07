@@ -1,7 +1,6 @@
 model = "gpt-5.5"
 model_reasoning_effort = "xhigh"
 web_search = "live"
-developer_instructions = "<omx version=\"1\">You have oh-my-codex installed through Codex plugin mode. AGENTS.md is the orchestration brain and main control surface. Follow AGENTS.md for skill/keyword routing and $name workflow invocation. When spawning native subagents, set `agent_type` to an installed role and never omit it for OMX work. Registered Codex plugin marketplace surfaces supply OMX workflows and plugin-scoped companion resources when the plugin is installed; native agent roles are installed as setup-owned Codex agent TOML files in plugin mode so agent_type routing works. User-installed skills may still live under ~/.codex/skills. Use outcome-first, concise progress updates: state the target result, constraints, validation evidence, and stop condition before adding process detail.</omx>"
 
 [projects."/Users/th.kim/Desktop/lets-intern-client"]
 trust_level = "trusted"
@@ -169,34 +168,3 @@ status_line_use_colors = true
 [features]
 plugin_hooks = true
 goals = true
-
-[plugins."oh-my-codex@oh-my-codex-local"]
-enabled = true
-
-[marketplaces.oh-my-codex-local]
-source_type = "local"
-source = "/opt/homebrew/lib/node_modules/oh-my-codex"
-
-[hooks.state]
-
-[hooks.state."oh-my-codex@oh-my-codex-local:hooks/hooks.json:pre_tool_use:0:0"]
-trusted_hash = "sha256:0beadaffc3fbe7daf525b5f470271fd9652bbb6a681827f62ae519aa585114fa"
-enabled = true
-
-[hooks.state."oh-my-codex@oh-my-codex-local:hooks/hooks.json:post_tool_use:0:0"]
-trusted_hash = "sha256:8ec4518162bac57963c9c3f8d3b6f65537a132387cafbbad1bf4c8fc3591209b"
-
-[hooks.state."oh-my-codex@oh-my-codex-local:hooks/hooks.json:pre_compact:0:0"]
-trusted_hash = "sha256:0e2a59e8120f92417338b44563e5eded7dd0f7b4343c5cb5b93f730fae42e7be"
-
-[hooks.state."oh-my-codex@oh-my-codex-local:hooks/hooks.json:post_compact:0:0"]
-trusted_hash = "sha256:3af8aa800d97defd1fcadbd4fca784153ebbe2471f37dbaa76f8a66ab565204b"
-
-[hooks.state."oh-my-codex@oh-my-codex-local:hooks/hooks.json:session_start:0:0"]
-trusted_hash = "sha256:c70df1f988a6965eb9d0fbdbfeaf84a609c98a9e24567dd1eb140cd6bf8e49f9"
-
-[hooks.state."oh-my-codex@oh-my-codex-local:hooks/hooks.json:user_prompt_submit:0:0"]
-trusted_hash = "sha256:dbfc3e0626a9cf6bbe579a69e22409384ed0598fba08df794b355e1e7ced9e53"
-
-[hooks.state."oh-my-codex@oh-my-codex-local:hooks/hooks.json:stop:0:0"]
-trusted_hash = "sha256:216a53a71d5c9819f0fdbbbbf869c4f8d9455e742dad9e0f1d91f3d67dbba2ff"
