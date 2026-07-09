@@ -17,7 +17,9 @@
           "target": { "type": "string" },
           "depends": { "type": "array", "items": { "type": "string" } },
           "install": { "type": "string" },
-          "notes": { "type": "array", "items": { "type": "string" } }
+          "notes": { "type": "array", "items": { "type": "string" } },
+          "profiles": { "type": "array", "items": { "type": "string" } },
+          "exceptProfiles": { "type": "array", "items": { "type": "string" } }
         }
       }
     }

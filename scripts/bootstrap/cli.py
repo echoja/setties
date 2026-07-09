@@ -18,7 +18,7 @@ from .defaults import (
     run_defaults_cmd,
     values_equal,
 )
-from .deps import KIND_PREDICATE, load_dep_checks
+from .deps import KIND_PREDICATE, active_profiles, check_is_active, load_dep_checks
 from .git import verify_gpg_signing, verify_ssh_keys
 from .symlinks import (
     ReplaceMode,
@@ -80,7 +80,7 @@ def status() -> None:
 @app.command()
 def verify() -> None:
     """Run all verification checks on your environment."""
-    ok = fail = 0
+    ok = fail = skipped = 0
 
     # 1. Symlink health
     console.rule("[bold]Symlink health[/bold]", align="left", style="dim")
@@ -98,6 +98,7 @@ def verify() -> None:
     # 2. Dependencies
     console.rule("[bold]Dependencies[/bold]", align="left", style="dim")
     checks = load_dep_checks()
+    active = active_profiles()
 
     # Build reverse dependency map: label -> list of labels that depend on it
     required_by: dict[str, list[str]] = defaultdict(list)
@@ -109,6 +110,17 @@ def verify() -> None:
         label = check["label"]
         kind = check["kind"]
         target = check["target"]
+
+        if not check_is_active(check, active):
+            profiles = check.get("profiles")
+            if profiles is not None and not (active & set(profiles)):
+                reason = f"needs profile: {', '.join(sorted(profiles))}"
+            else:
+                matched = sorted(active & set(check.get("exceptProfiles") or []))
+                reason = f"excluded on profile: {', '.join(matched)}"
+            console.print(f"[yellow]SKIP[/yellow]    {label} - {kind}: {target} ({reason})")
+            skipped += 1
+            continue
 
         predicate = KIND_PREDICATE.get(kind)
         if predicate and predicate(target):
@@ -349,6 +361,8 @@ def verify() -> None:
         summary += f", [red]{fail} fail[/red]"
     else:
         summary += f", {fail} fail"
+    if skipped:
+        summary += f", [yellow]{skipped} skipped[/yellow]"
     console.rule(f"[bold]Summary: {summary}[/bold]", align="left", style="dim")
     if fail > 0:
         raise typer.Exit(1)

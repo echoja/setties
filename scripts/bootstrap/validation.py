@@ -61,6 +61,16 @@ def validate_deps_schema() -> list[str]:
                         f"checks[{i}].depends: unknown label '{dep}'"
                     )
 
+            profiles = set(item.get("profiles", []) or [])
+            except_profiles = set(item.get("exceptProfiles", []) or [])
+            overlap = profiles & except_profiles
+            if overlap:
+                label = item.get("label", "?")
+                errors.append(
+                    f"checks[{i}] ({label}): profiles and exceptProfiles "
+                    f"overlap: {', '.join(sorted(overlap))}"
+                )
+
         in_degree: dict[str, int] = defaultdict(int)
         dependents: dict[str, list[str]] = defaultdict(list)
         for item in items:
