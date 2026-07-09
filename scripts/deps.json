@@ -356,6 +356,15 @@
       "install": "brew install pre-commit"
     },
     {
+      "label": "gitleaks",
+      "kind": "command",
+      "target": "gitleaks",
+      "depends": [
+        "homebrew"
+      ],
+      "install": "brew install gitleaks"
+    },
+    {
       "label": "pinentry-mac",
       "kind": "command",
       "target": "pinentry-mac",
