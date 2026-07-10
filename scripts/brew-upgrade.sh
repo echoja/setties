@@ -16,7 +16,7 @@ log "running brew update..."
 brew update
 
 log "running brew upgrade..."
-brew upgrade --greedy-auto-updates
+brew upgrade --no-quit
 
 log "upgrade complete"
 
