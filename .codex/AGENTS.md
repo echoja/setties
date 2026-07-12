@@ -32,3 +32,4 @@
 ## Basana Obsidian Vault
 
 - When the user says "basana 커밋푸시" or asks to commit/push Basana, use the iCloud Obsidian vault at `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/basana`.
+- Separate the commit subject from the body, and add comprehensive details to the body.
