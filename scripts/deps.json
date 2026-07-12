@@ -164,7 +164,10 @@
       "depends": [
         "homebrew"
       ],
-      "install": "brew install ttyd"
+      "install": "brew install ttyd",
+      "exceptProfiles": [
+        "personal"
+      ]
     },
     {
       "label": "tv",
