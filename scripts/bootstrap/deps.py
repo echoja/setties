@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
@@ -62,3 +63,12 @@ def check_is_active(check: dict, active: set[str]) -> bool:
     if except_profiles is not None and (active & set(except_profiles)):
         return False
     return True
+
+
+def run_update_check(command: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["/bin/bash", "-c", command],
+        cwd=repo_root(),
+        capture_output=True,
+        text=True,
+    )

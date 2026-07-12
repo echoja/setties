@@ -17,10 +17,30 @@
           "target": { "type": "string" },
           "depends": { "type": "array", "items": { "type": "string" } },
           "install": { "type": "string" },
+          "updateCheck": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Trusted shell command; exit 0 means current, any other exit fails verification"
+          },
+          "update": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Remediation command printed when updateCheck fails; never run automatically"
+          },
           "notes": { "type": "array", "items": { "type": "string" } },
           "profiles": { "type": "array", "items": { "type": "string" } },
           "exceptProfiles": { "type": "array", "items": { "type": "string" } }
-        }
+        },
+        "allOf": [
+          {
+            "if": { "required": ["updateCheck"] },
+            "then": { "required": ["update"] }
+          },
+          {
+            "if": { "required": ["update"] },
+            "then": { "required": ["updateCheck"] }
+          }
+        ]
       }
     }
   }

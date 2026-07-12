@@ -18,7 +18,13 @@ from .defaults import (
     run_defaults_cmd,
     values_equal,
 )
-from .deps import KIND_PREDICATE, active_profiles, check_is_active, load_dep_checks
+from .deps import (
+    KIND_PREDICATE,
+    active_profiles,
+    check_is_active,
+    load_dep_checks,
+    run_update_check,
+)
 from .git import verify_gpg_signing, verify_ssh_keys
 from .symlinks import (
     ReplaceMode,
@@ -142,7 +148,34 @@ def verify() -> None:
             console.print(f"        [yellow]note:[/yellow] [dim]{note}[/dim]")
     console.print()
 
-    # 3. JSON schema validation
+    # 3. Updates
+    console.rule("[bold]Updates[/bold]", align="left", style="dim")
+    update_checks = [
+        check
+        for check in sorted(checks, key=lambda c: c["label"].casefold())
+        if "updateCheck" in check and check_is_active(check, active)
+    ]
+    if not update_checks:
+        console.print("[dim]No update checks configured[/dim]")
+
+    for check in update_checks:
+        label = check["label"]
+        result = run_update_check(check["updateCheck"])
+        if result.returncode == 0:
+            console.print(f"[green]OK[/green]      {label}")
+            ok += 1
+            continue
+
+        console.print(f"[red]FAIL[/red]    {label} - update check failed")
+        output = (result.stdout + result.stderr).strip()
+        if output:
+            for line in output.splitlines():
+                console.print(f"        [dim]{line}[/dim]")
+        console.print(f"        [yellow]update:[/yellow] {check['update']}")
+        fail += 1
+    console.print()
+
+    # 4. JSON schema validation
     console.rule("[bold]JSON schema validation[/bold]", align="left", style="dim")
     schema_errors = validate_deps_schema()
     if schema_errors:
@@ -181,7 +214,7 @@ def verify() -> None:
         ok += 1
     console.print()
 
-    # 4. JSON formatting
+    # 5. JSON formatting
     console.rule("[bold]JSON formatting[/bold]", align="left", style="dim")
     for json_name in ("deps.json", "macos-defaults.json", "links.json", "jobs.json"):
         json_file = repo_root() / "scripts" / json_name
@@ -196,7 +229,7 @@ def verify() -> None:
             fail += 1
     console.print()
 
-    # 5. Hardcoded home paths
+    # 6. Hardcoded home paths
     console.rule("[bold]Hardcoded home paths[/bold]", align="left", style="dim")
     violations = check_hardcoded_paths(repo_root() / ".zshrc")
     if violations:
@@ -208,21 +241,21 @@ def verify() -> None:
         ok += 1
     console.print()
 
-    # 6. GPG signing
+    # 7. GPG signing
     console.rule("[bold]GPG signing[/bold]", align="left", style="dim")
     gpg_ok, gpg_fail = verify_gpg_signing()
     ok += gpg_ok
     fail += gpg_fail
     console.print()
 
-    # 7. SSH keys
+    # 8. SSH keys
     console.rule("[bold]SSH keys[/bold]", align="left", style="dim")
     ssh_ok, ssh_fail = verify_ssh_keys()
     ok += ssh_ok
     fail += ssh_fail
     console.print()
 
-    # 8. Keychain hygiene
+    # 9. Keychain hygiene
     console.rule("[bold]Keychain hygiene[/bold]", align="left", style="dim")
     r = subprocess.run(
         ["security", "find-generic-password", "-s", "bw-master", "-a", "bitwarden"],
@@ -236,7 +269,7 @@ def verify() -> None:
         fail += 1
     console.print()
 
-    # 9. Pre-commit hooks
+    # 10. Pre-commit hooks
     console.rule("[bold]Pre-commit hooks[/bold]", align="left", style="dim")
     hook_file = repo_root() / ".git" / "hooks" / "pre-commit"
     if hook_file.is_file() and "pre-commit" in hook_file.read_text():
@@ -247,7 +280,7 @@ def verify() -> None:
         fail += 1
     console.print()
 
-    # 10. Pyright type-checking
+    # 11. Pyright type-checking
     console.rule("[bold]Pyright type-checking[/bold]", align="left", style="dim")
     pyright_result = subprocess.run(
         ["uv", "run", "--frozen", "pyright"],
@@ -264,7 +297,7 @@ def verify() -> None:
         fail += 1
     console.print()
 
-    # 11. macOS defaults
+    # 12. macOS defaults
     if platform.system() == "Darwin":
         console.rule("[bold]macOS defaults[/bold]", align="left", style="dim")
         entries = load_defaults_entries()
@@ -289,7 +322,7 @@ def verify() -> None:
                 fail += 1
         console.print()
 
-    # 12. Remote access
+    # 13. Remote access
     if platform.system() == "Darwin":
         console.rule("[bold]Remote access[/bold]", align="left", style="dim")
         remote_checks: list[tuple[str, int, str]] = [
@@ -325,7 +358,7 @@ def verify() -> None:
             fail += 1
         console.print()
 
-    # 13. Launchd jobs
+    # 14. Launchd jobs
     if platform.system() == "Darwin":
         console.rule("[bold]Launchd jobs[/bold]", align="left", style="dim")
         for entry in load_job_entries():

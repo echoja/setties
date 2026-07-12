@@ -218,6 +218,20 @@
       "install": "mise use -g node@lts"
     },
     {
+      "label": "playwright-cli",
+      "kind": "command",
+      "target": "playwright-cli",
+      "depends": [
+        "mise"
+      ],
+      "install": "mise use -g 'npm:@playwright/cli@latest'",
+      "updateCheck": "mise upgrade --dry-run-code 'npm:@playwright/cli' && skill_source=\"$(mise where 'npm:@playwright/cli')/lib/node_modules/@playwright/cli/skills/playwright-cli\" && diff -qr \"$skill_source\" \"$HOME/works/.agents/skills/playwright-cli\" && diff -qr \"$skill_source\" \"$HOME/works/.claude/skills/playwright-cli\"",
+      "update": "mise upgrade 'npm:@playwright/cli' && rm -rf \"$HOME/works/.agents/skills/playwright-cli\" \"$HOME/works/.claude/skills/playwright-cli\" && cd \"$HOME/works\" && mise exec 'npm:@playwright/cli' -- playwright-cli install --skills=agents && mise exec 'npm:@playwright/cli' -- playwright-cli install --skills=claude",
+      "notes": [
+        "The Playwright skill copies are generated from the CLI package and should not be edited locally."
+      ]
+    },
+    {
       "label": "bun",
       "kind": "command",
       "target": "bun",
