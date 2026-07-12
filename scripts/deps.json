@@ -188,6 +188,15 @@
       "install": "brew install ripgrep"
     },
     {
+      "label": "ast-grep",
+      "kind": "command",
+      "target": "ast-grep",
+      "depends": [
+        "homebrew"
+      ],
+      "install": "brew install ast-grep"
+    },
+    {
       "label": "python3",
       "kind": "command",
       "target": "python3",

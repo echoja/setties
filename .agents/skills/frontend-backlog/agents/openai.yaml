@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Backlog"
+  short_description: "Maintain one active frontend GitHub issue"
+  default_prompt: "Use $frontend-backlog to select and publish the single active frontend improvement."

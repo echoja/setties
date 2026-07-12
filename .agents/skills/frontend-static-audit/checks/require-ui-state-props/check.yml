@@ -1,0 +1,19 @@
+id: require-ui-state-props
+purpose: Require @ui-inspectable React function components to attach uiStateProps to rendered JSX.
+engine: ast-grep
+language: Tsx
+acceptance:
+  react: "19.2"
+  typescript: "7"
+establishedRuleSearch:
+  result: no equivalent established rule found
+  checked:
+    - eslint-plugin-react
+    - eslint-plugin-jsx-a11y
+    - Biome JavaScript rules
+limitations:
+  - Other React and TypeScript versions may not work.
+  - Complex component factories, class components, MDX, and hidden HOC bodies are unsupported.
+  - The structural rule does not prove that every conditional return branch is instrumented.
+  - An unreachable JSX expression can satisfy structural presence; component tests must cover rendered branches.
+  - Runtime browser inspection must confirm that attributes reach the DOM.

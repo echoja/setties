@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Audit"
+  short_description: "Orchestrate one focused frontend quality audit"
+  default_prompt: "Use $frontend-audit to audit the current frontend changes and select one improvement."

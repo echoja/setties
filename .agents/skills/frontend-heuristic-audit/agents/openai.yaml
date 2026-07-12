@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Heuristic Audit"
+  short_description: "Judge evidenced UI usability and consistency"
+  default_prompt: "Use $frontend-heuristic-audit to evaluate collected browser evidence against the UI policy."

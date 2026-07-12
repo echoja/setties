@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Static Audit"
+  short_description: "Run trusted and atomic frontend source checks"
+  default_prompt: "Use $frontend-static-audit to inspect the current frontend changes with established lint rules first."

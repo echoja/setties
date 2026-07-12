@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Browser Inspect"
+  short_description: "Collect structural frontend browser evidence"
+  default_prompt: "Use $frontend-browser-inspect to inspect the affected UI in one Playwright CLI session."

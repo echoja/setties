@@ -1,0 +1,73 @@
+id: require-ui-state-props
+language: Tsx
+rule:
+  kind: comment
+  regex: '@ui-inspectable'
+  precedes:
+    any:
+      - all:
+          - kind: export_statement
+          - has:
+              any:
+                - kind: function_declaration
+                - all:
+                    - kind: lexical_declaration
+                    - has:
+                        kind: arrow_function
+                        stopBy: end
+              stopBy: end
+          - not:
+              has:
+                kind: spread_element
+                has:
+                  pattern: uiStateProps($$$ARGS)
+                  stopBy: end
+                inside:
+                  any:
+                    - all:
+                        - kind: jsx_self_closing_element
+                        - has:
+                            field: name
+                            regex: '^[a-z]'
+                    - all:
+                        - kind: jsx_opening_element
+                        - has:
+                            field: name
+                            regex: '^[a-z]'
+                  stopBy: end
+                stopBy: end
+      - all:
+          - any:
+              - kind: function_declaration
+              - all:
+                  - kind: lexical_declaration
+                  - has:
+                      kind: arrow_function
+                      stopBy: end
+          - not:
+              has:
+                kind: spread_element
+                has:
+                  pattern: uiStateProps($$$ARGS)
+                  stopBy: end
+                inside:
+                  any:
+                    - all:
+                        - kind: jsx_self_closing_element
+                        - has:
+                            field: name
+                            regex: '^[a-z]'
+                    - all:
+                        - kind: jsx_opening_element
+                        - has:
+                            field: name
+                            regex: '^[a-z]'
+                  stopBy: end
+                stopBy: end
+    stopBy: neighbor
+message: "@ui-inspectable component must attach uiStateProps(...) to rendered JSX"
+severity: error
+note: "Acceptance target: React 19.2 and TypeScript 7. Other versions may not work."
+metadata:
+  category: frontend-instrumentation
+  deterministic: true

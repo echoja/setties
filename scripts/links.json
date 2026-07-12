@@ -22,6 +22,26 @@
       "description": "English Punch Codex skill"
     },
     {
+      "key": ".agents/skills/frontend-audit",
+      "description": "Frontend quality audit orchestrator skill"
+    },
+    {
+      "key": ".agents/skills/frontend-static-audit",
+      "description": "Frontend static analysis skill"
+    },
+    {
+      "key": ".agents/skills/frontend-browser-inspect",
+      "description": "Frontend Playwright browser inspection skill"
+    },
+    {
+      "key": ".agents/skills/frontend-heuristic-audit",
+      "description": "Frontend evidence-based heuristic audit skill"
+    },
+    {
+      "key": ".agents/skills/frontend-backlog",
+      "description": "Frontend single-issue GitHub backlog skill"
+    },
+    {
       "key": ".claude/settings.json",
       "description": "Claude Code settings"
     },

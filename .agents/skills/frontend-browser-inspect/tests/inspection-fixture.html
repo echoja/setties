@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:,">
+    <title>Frontend inspection fixture</title>
+    <style>
+      form { display: grid; gap: 4px; width: 320px; padding: 16px; }
+    </style>
+  </head>
+  <body>
+    <form
+      aria-label="Checkout"
+      aria-busy="true"
+      data-ui-component="checkout-form"
+      data-ui-state="submission:submitting validation:valid"
+    >
+      <label>Card number <input autocomplete="cc-number"></label>
+      <button type="submit" disabled>Pay</button>
+    </form>
+  </body>
+</html>
