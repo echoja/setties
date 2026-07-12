@@ -10,20 +10,22 @@ fi
 
 branch="$(git symbolic-ref --quiet --short HEAD || true)"
 if [[ -z "$branch" ]]; then
-  echo "Detached HEAD; skipping upstream freshness check."
-  exit 0
+  echo "Commit blocked: detached HEAD has no upstream branch to verify." >&2
+  exit 1
 fi
 
 upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 if [[ -z "$upstream" ]]; then
-  echo "No upstream configured for $branch; skipping upstream freshness check."
-  exit 0
+  echo "Commit blocked: no upstream configured for $branch." >&2
+  echo "Set one with: git branch --set-upstream-to=<remote>/<branch> $branch" >&2
+  exit 1
 fi
 
 remote="$(git config --get "branch.${branch}.remote" || true)"
 if [[ -z "$remote" ]]; then
-  echo "No remote configured for $branch; skipping upstream freshness check."
-  exit 0
+  echo "Commit blocked: no remote configured for $branch." >&2
+  echo "Set an upstream before committing." >&2
+  exit 1
 fi
 
 echo "Fetching $remote before commit..."
