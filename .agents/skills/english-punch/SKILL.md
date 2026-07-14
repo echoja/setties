@@ -63,7 +63,16 @@ action is for the web UI only.
   fits naturally as a continuous span. Use multiple blanks when the
   target expression's important words are separated by natural but
   nonessential context words or modifiers. The answer must complete the
-  blanks in order and be the most natural completion.
+  blanks in order and be the most natural completion. When the user
+  provides a complete sentence, preserve its wording exactly and replace
+  only the target expression with the appropriate blank or blanks. Treat
+  parentheses around an expression as target markers, not literal sentence
+  punctuation: `Every recipe is (accompanied by) a photo.` becomes `Every
+  recipe is ___ a photo.` Do not rewrite, expand, shorten, correct, or
+  normalize a supplied sentence unless the user asks for editing or the
+  sentence cannot produce a valid card. Preserving the supplied sentence
+  takes priority over the preferred question length and collocation rules
+  below.
   Make collocation fit the top priority: use a real, high-frequency
   collocation or grammatical frame for the target word, such as
   verb+noun, adjective+noun, adverb+adjective, or a common preposition
@@ -112,12 +121,14 @@ Convex, edit files, or mutate any data. Ask it to return strict JSON:
 The parent agent validates the result before saving: one or more `___`
 blanks, multiple blanks only when they hide target-answer material while
 leaving useful non-answer words visible, 8–22 question words unless
-context truly requires otherwise, natural collocation prioritized over
-easy vocabulary, answer is the best completion, hint is under 12 words
-and does not contain the answer, and explanation is 10–50 words. If the
-result is weak, ask a fresh subagent for a new draft or revise only minor
-issues locally. The parent agent alone calls `ep cards create` or
-`ep cards replace` and confirms the saved card.
+context truly requires otherwise, a user-provided complete sentence is
+preserved verbatim except for its target markers and blanks, natural
+collocation is prioritized over easy vocabulary when generating a new
+sentence, answer is the best completion, hint is under 12 words and does
+not contain the answer, and explanation is 10–50 words. If the result is
+weak, ask a fresh subagent for a new draft or revise only minor issues
+locally. The parent agent alone calls `ep cards create` or `ep cards
+replace` and confirms the saved card.
 
 ### Call shape
 
