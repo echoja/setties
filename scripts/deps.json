@@ -292,6 +292,24 @@
       "install": "https://code.visualstudio.com/"
     },
     {
+      "label": "orca-app",
+      "kind": "dir",
+      "target": "/Applications/Orca.app",
+      "depends": [
+        "homebrew"
+      ],
+      "install": "brew install --cask stablyai/orca/orca"
+    },
+    {
+      "label": "orca-cli",
+      "kind": "command",
+      "target": "orca",
+      "depends": [
+        "orca-app"
+      ],
+      "install": "brew install --cask stablyai/orca/orca"
+    },
+    {
       "label": "choose",
       "kind": "command",
       "target": "choose",
