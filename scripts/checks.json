@@ -1,0 +1,147 @@
+{
+  "$schema": "./checks.schema.json",
+  "checks": [
+    {
+      "id": "ssh-enabled",
+      "label": "Remote Login (SSH)",
+      "kind": "tcp",
+      "host": "localhost",
+      "port": 22,
+      "expected": "open",
+      "exceptProfiles": [
+        "personal"
+      ],
+      "fix": "sudo systemsetup -f -setremotelogin on"
+    },
+    {
+      "id": "ssh-disabled",
+      "label": "Remote Login (SSH) disabled",
+      "kind": "launchd",
+      "domain": "system",
+      "service": "com.openssh.sshd",
+      "expected": "disabled",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "sudo systemsetup -f -setremotelogin off"
+    },
+    {
+      "id": "ssh-stopped",
+      "label": "Remote Login (SSH) stopped",
+      "kind": "tcp",
+      "host": "localhost",
+      "port": 22,
+      "expected": "closed",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "sudo systemsetup -f -setremotelogin off"
+    },
+    {
+      "id": "screen-sharing-enabled",
+      "label": "Screen Sharing",
+      "kind": "tcp",
+      "host": "localhost",
+      "port": 5900,
+      "expected": "open",
+      "exceptProfiles": [
+        "personal"
+      ],
+      "fix": "sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensharing.plist"
+    },
+    {
+      "id": "screen-sharing-disabled",
+      "label": "Screen Sharing disabled",
+      "kind": "launchd",
+      "domain": "system",
+      "service": "com.apple.screensharing",
+      "expected": "disabled",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "sudo launchctl disable system/com.apple.screensharing"
+    },
+    {
+      "id": "screen-sharing-stopped",
+      "label": "Screen Sharing stopped",
+      "kind": "tcp",
+      "host": "localhost",
+      "port": 5900,
+      "expected": "closed",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "sudo launchctl bootout system/com.apple.screensharing"
+    },
+    {
+      "id": "remote-management-disabled",
+      "label": "Remote Management disabled",
+      "kind": "launchd",
+      "domain": "user",
+      "service": "com.apple.RemoteDesktop.agent",
+      "expected": "disabled",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "launchctl disable gui/$UID/com.apple.RemoteDesktop.agent"
+    },
+    {
+      "id": "remote-management-stopped",
+      "label": "Remote Management stopped",
+      "kind": "tcp",
+      "host": "localhost",
+      "port": 3283,
+      "expected": "closed",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -deactivate -stop"
+    },
+    {
+      "id": "cloudflare-tunnel-disabled",
+      "label": "Cloudflare Tunnel launch agent disabled",
+      "kind": "launchd",
+      "domain": "user",
+      "service": "com.cloudflare.cloudflared",
+      "expected": "disabled",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "launchctl disable gui/$UID/com.cloudflare.cloudflared"
+    },
+    {
+      "id": "cloudflare-homebrew-service-disabled",
+      "label": "Homebrew Cloudflare service disabled",
+      "kind": "launchd",
+      "domain": "user",
+      "service": "homebrew.mxcl.cloudflared",
+      "expected": "disabled",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "launchctl disable gui/$UID/homebrew.mxcl.cloudflared"
+    },
+    {
+      "id": "cloudflare-tunnel-stopped",
+      "label": "Cloudflare Tunnel stopped",
+      "kind": "process",
+      "pattern": "(^|/)cloudflared .*tunnel( |$)",
+      "expected": "stopped",
+      "profiles": [
+        "personal"
+      ],
+      "fix": "launchctl bootout gui/$UID/com.cloudflare.cloudflared"
+    },
+    {
+      "id": "tailscale-connected",
+      "label": "Tailscale connected",
+      "kind": "command",
+      "argv": [
+        "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+        "status"
+      ],
+      "expected": "success",
+      "fix": "open -a Tailscale"
+    }
+  ]
+}

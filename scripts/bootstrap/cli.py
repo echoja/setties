@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import platform
-import socket
 import subprocess
 from collections import defaultdict
 
 import typer
 
+from .checks import load_check_entries, run_check
 from .defaults import (
     DefaultEntry,
     ReadStatus,
@@ -21,6 +21,7 @@ from .defaults import (
 from .deps import (
     KIND_PREDICATE,
     active_profiles,
+    check_inactive_reason,
     check_is_active,
     load_dep_checks,
     run_update_check,
@@ -51,6 +52,7 @@ from .utils import console, display_path, repo_root, require_darwin
 from .validation import (
     check_hardcoded_paths,
     check_json_formatting,
+    validate_checks_schema,
     validate_defaults_schema,
     validate_deps_schema,
     validate_jobs_schema,
@@ -117,14 +119,12 @@ def verify() -> None:
         kind = check["kind"]
         target = check["target"]
 
-        if not check_is_active(check, active):
-            profiles = check.get("profiles")
-            if profiles is not None and not (active & set(profiles)):
-                reason = f"needs profile: {', '.join(sorted(profiles))}"
-            else:
-                matched = sorted(active & set(check.get("exceptProfiles") or []))
-                reason = f"excluded on profile: {', '.join(matched)}"
-            console.print(f"[yellow]SKIP[/yellow]    {label} - {kind}: {target} ({reason})")
+        inactive_reason = check_inactive_reason(check, active)
+        if inactive_reason:
+            console.print(
+                f"[yellow]SKIP[/yellow]    {label} - {kind}: {target} "
+                f"({inactive_reason})"
+            )
             skipped += 1
             continue
 
@@ -186,6 +186,15 @@ def verify() -> None:
         console.print("[green]OK[/green]      scripts/deps.json")
         ok += 1
 
+    checks_schema_errors = validate_checks_schema()
+    if checks_schema_errors:
+        for err in checks_schema_errors:
+            console.print(f"[red]FAIL[/red]    {err}")
+            fail += 1
+    else:
+        console.print("[green]OK[/green]      scripts/checks.json")
+        ok += 1
+
     defaults_schema_errors = validate_defaults_schema()
     if defaults_schema_errors:
         for err in defaults_schema_errors:
@@ -216,7 +225,13 @@ def verify() -> None:
 
     # 5. JSON formatting
     console.rule("[bold]JSON formatting[/bold]", align="left", style="dim")
-    for json_name in ("deps.json", "macos-defaults.json", "links.json", "jobs.json"):
+    for json_name in (
+        "deps.json",
+        "checks.json",
+        "macos-defaults.json",
+        "links.json",
+        "jobs.json",
+    ):
         json_file = repo_root() / "scripts" / json_name
         if check_json_formatting(json_file):
             console.print(f"[green]OK[/green]      scripts/{json_name}")
@@ -322,40 +337,41 @@ def verify() -> None:
                 fail += 1
         console.print()
 
-    # 13. Remote access
+    # 13. System checks
     if platform.system() == "Darwin":
-        console.rule("[bold]Remote access[/bold]", align="left", style="dim")
-        remote_checks: list[tuple[str, int, str]] = [
-            ("Remote Login (SSH)", 22, "sudo systemsetup -f -setremotelogin on"),
-            ("Screen Sharing", 5900, "sudo launchctl bootstrap system /System/Library/LaunchDaemons/com.apple.screensharing.plist"),
-        ]
-        for label, port, hint in remote_checks:
-            try:
-                with socket.create_connection(("localhost", port), timeout=1.0):
-                    console.print(f"[green]OK[/green]      {label} (port {port})")
-                    ok += 1
-            except (OSError, TimeoutError):
-                console.print(
-                    f"[red]FAIL[/red]    {label} not enabled"
-                    f" (enable: {hint})"
-                )
-                fail += 1
-
-        # Tailscale
-        try:
-            ts = subprocess.run(
-                ["/Applications/Tailscale.app/Contents/MacOS/Tailscale", "status"],
-                capture_output=True, text=True,
+        console.rule("[bold]System checks[/bold]", align="left", style="dim")
+        if checks_schema_errors:
+            console.print(
+                "[yellow]SKIP[/yellow]    System checks not run because "
+                "scripts/checks.json is invalid"
             )
-            if ts.returncode == 0:
-                console.print("[green]OK[/green]      Tailscale connected")
-                ok += 1
-            else:
-                console.print("[red]FAIL[/red]    Tailscale not running (open Tailscale app)")
+            skipped += 1
+        else:
+            for check in load_check_entries():
+                label = check["label"]
+                inactive_reason = check_inactive_reason(check, active)
+                if inactive_reason:
+                    console.print(
+                        f"[yellow]SKIP[/yellow]    {label} ({inactive_reason})"
+                    )
+                    skipped += 1
+                    continue
+
+                result = run_check(check)
+                if result.ok:
+                    console.print(
+                        f"[green]OK[/green]      {label} ({result.actual})"
+                    )
+                    ok += 1
+                    continue
+
+                console.print(
+                    f"[red]FAIL[/red]    {label}: expected {check['expected']}, "
+                    f"got {result.actual}"
+                )
+                if fix := check.get("fix"):
+                    console.print(f"        [yellow]fix:[/yellow] {fix}")
                 fail += 1
-        except FileNotFoundError:
-            console.print("[red]FAIL[/red]    Tailscale not installed")
-            fail += 1
         console.print()
 
     # 14. Launchd jobs

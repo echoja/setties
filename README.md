@@ -29,6 +29,22 @@ $ ./scripts/bootstrap.py --help
 $ ./v
 ```
 
+### Machine profiles
+
+Machine-specific profiles live outside Git in `~/.config/setties/profiles`.
+Separate multiple profiles with whitespace or commas. For example, a personal
+Mac that should not require remote-access services uses:
+
+```sh
+mkdir -p ~/.config/setties
+printf 'personal\n' > ~/.config/setties/profiles
+```
+
+Profile selectors in `scripts/deps.json` control dependencies. Selectors in
+`scripts/checks.json` control non-dependency machine-state checks, including
+whether remote-access services must be enabled or disabled. `./v` reports which
+entries are active or skipped for the current profile.
+
 ## Manual install steps
 
 Some dependencies require `sudo` or interactive setup and cannot be automated by the bootstrap script.
@@ -44,6 +60,7 @@ brew install --cask zoom
 # RunCat (App Store only, no brew cask)
 mas install 1429033973
 
+# Remote-access setup (non-personal machines only)
 # Remote Login (SSH)
 sudo systemsetup -f -setremotelogin on
 
@@ -66,6 +83,7 @@ sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser ech
 ## Source of truth
 
 - 설치 대상·설치 명령·사용/비사용 이유는 전부 `scripts/deps.json`이 단일 기준입니다. `./v`가 각 엔트리의 `install`과 `notes`를 출력하므로, 이 README는 "어디를 봐야 하는지"만 가리키도록 유지합니다.
+- 설치 대상이 아닌 시스템 상태 검사는 `scripts/checks.json`이 단일 기준입니다. 체크의 기대 상태와 profile selector를 바꿀 때는 Python 코드를 수정하지 않습니다.
 - 예: 컨테이너 런타임 선택(왜 Colima인지, 왜 Docker Desktop/podman을 설치하지 말아야 하는지)은 `docker` 엔트리의 `notes`에 담겨 있습니다.
 
 ## Pre-commit

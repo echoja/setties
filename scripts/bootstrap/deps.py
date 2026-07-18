@@ -56,13 +56,17 @@ def check_is_active(check: dict, active: set[str]) -> bool:
          and (exceptProfiles 없음 or active ∩ exceptProfiles = ∅)
     exceptProfiles 는 hard veto (AND). selector 가 둘 다 없으면 universal.
     """
+    return check_inactive_reason(check, active) is None
+
+
+def check_inactive_reason(check: dict, active: set[str]) -> str | None:
     profiles = check.get("profiles")
     if profiles is not None and not (active & set(profiles)):
-        return False
-    except_profiles = check.get("exceptProfiles")
-    if except_profiles is not None and (active & set(except_profiles)):
-        return False
-    return True
+        return f"needs profile: {', '.join(sorted(profiles))}"
+    matched = sorted(active & set(check.get("exceptProfiles") or []))
+    if matched:
+        return f"excluded on profile: {', '.join(matched)}"
+    return None
 
 
 def run_update_check(command: str) -> subprocess.CompletedProcess[str]:

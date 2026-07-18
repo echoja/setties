@@ -11,6 +11,23 @@ import jsonschema
 from .utils import repo_root
 
 
+def _validate_profile_selectors(
+    items: list, errors: list[str], collection: str
+) -> None:
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        profiles = set(item.get("profiles", []) or [])
+        except_profiles = set(item.get("exceptProfiles", []) or [])
+        overlap = profiles & except_profiles
+        if overlap:
+            label = item.get("label", "?")
+            errors.append(
+                f"{collection}[{i}] ({label}): profiles and exceptProfiles "
+                f"overlap: {', '.join(sorted(overlap))}"
+            )
+
+
 def validate_json_schema(
     json_path: Path,
     schema_path: Path,
@@ -47,6 +64,7 @@ def validate_json_schema(
 
 def validate_deps_schema() -> list[str]:
     def _extra_validator(items: list, errors: list[str]) -> None:
+        _validate_profile_selectors(items, errors, "checks")
         all_labels = {
             item["label"]
             for item in items
@@ -60,16 +78,6 @@ def validate_deps_schema() -> list[str]:
                     errors.append(
                         f"checks[{i}].depends: unknown label '{dep}'"
                     )
-
-            profiles = set(item.get("profiles", []) or [])
-            except_profiles = set(item.get("exceptProfiles", []) or [])
-            overlap = profiles & except_profiles
-            if overlap:
-                label = item.get("label", "?")
-                errors.append(
-                    f"checks[{i}] ({label}): profiles and exceptProfiles "
-                    f"overlap: {', '.join(sorted(overlap))}"
-                )
 
         in_degree: dict[str, int] = defaultdict(int)
         dependents: dict[str, list[str]] = defaultdict(list)
@@ -106,6 +114,30 @@ def validate_deps_schema() -> list[str]:
     return validate_json_schema(
         repo_root() / "scripts" / "deps.json",
         repo_root() / "scripts" / "deps.schema.json",
+        array_key="checks",
+        extra_validator=_extra_validator,
+    )
+
+
+def validate_checks_schema() -> list[str]:
+    def _extra_validator(items: list, errors: list[str]) -> None:
+        _validate_profile_selectors(items, errors, "checks")
+        seen: dict[str, int] = {}
+        for i, item in enumerate(items):
+            if not isinstance(item, dict):
+                continue
+            check_id = item.get("id", "")
+            if check_id in seen:
+                errors.append(
+                    f"checks[{i}]: duplicate id '{check_id}' "
+                    f"(first at checks[{seen[check_id]}])"
+                )
+            else:
+                seen[check_id] = i
+
+    return validate_json_schema(
+        repo_root() / "scripts" / "checks.json",
+        repo_root() / "scripts" / "checks.schema.json",
         array_key="checks",
         extra_validator=_extra_validator,
     )
@@ -190,9 +222,12 @@ def validate_jobs_schema() -> list[str]:
 
 
 def check_json_formatting(file_path: Path) -> bool:
-    with open(file_path, encoding="utf-8") as f:
-        raw = f.read()
-    data = json.loads(raw)
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            raw = f.read()
+        data = json.loads(raw)
+    except (json.JSONDecodeError, OSError):
+        return False
     expected = json.dumps(data, indent=2) + "\n"
     return raw == expected
 
