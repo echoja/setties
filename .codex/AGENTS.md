@@ -29,6 +29,17 @@
   3. Run `cd ~/setties && ./v` to verify everything is correct.
   4. Commit and push with `cd ~/setties && git add -A && git commit -m "<message>" && git push`.
 
+## Springfall Legacy Article Migration (`~/works/springfall-astro`)
+
+- When migrating an `elvanov.com/<post-id>` article into Springfall, first search the current content tree and Git history for the post ID, title, and distinctive text to avoid duplicates.
+- Treat the WordPress REST API as the source of truth. Fetch the post from `https://elvanov.com/wp-json/wp/v2/posts/<post-id>` and use its title, publication date, modified date, headings, body, emphasis, code, lists, quotations, links, and captions. Use the category and media endpoints when needed.
+- Preserve the original article wording. Only make changes required for valid, idiomatic MDX, such as converting HTML to Markdown, selecting fenced-code languages, and escaping literal angle brackets. Add the required summary and map legacy categories to the categories allowed by the current schema.
+- Store the article at `src/content/articles/YYYY-MM/<english-slug>/ko.mdx`. Article routes must use `/ko/article/YYYY-MM/<english-slug>/`.
+- Inventory every inline and featured image. Resolve media IDs through `https://elvanov.com/wp-json/wp/v2/media/<media-id>` and download the original `source_url`, not a resized `i0.wp.com` URL. Store images in the article's `assets/` directory, verify their type and original dimensions, and give them meaningful filenames.
+- Import local images through ESM and render them with `ArticleImage` using `img={...}`, the original caption, and a descriptive `alt`. Do not leave migrated images hosted on WordPress.
+- After migration, compare the source and rendered page for title, dates, sections, body, emphasis, code blocks, lists, links, captions, image count, and image dimensions. Run `pnpm validate` and `pnpm build`, then check that the localized route returns HTTP 200. Restart the Astro dev server if a newly added content directory causes a stale `UnknownContentCollectionError`.
+- Commit only the migration files. Preserve unrelated working-tree changes, and do not push or deploy Springfall unless the user explicitly asks.
+
 ## Basana Obsidian Vault
 
 - When the user says "basana 커밋푸시" or asks to commit/push Basana, use the iCloud Obsidian vault at `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/basana`.
