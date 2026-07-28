@@ -28,10 +28,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
-case ":$PATH:" in
-  *:"$HOME/.local/share/mise/shims":*) ;;
-  *) export PATH="$HOME/.local/share/mise/shims:$PATH" ;;
-esac
+# mise 설정은 파일 맨 아래에 둔다. PATH 를 건드리는 다른 설정보다 뒤에 와야 앞자리를 잡는다.
 
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -328,7 +325,15 @@ export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 # Kiro CLI post block. Keep at the bottom of this file.
 # [[ -f "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh"
 
-eval "$(mise activate zsh)"
+# mise
+# 대화형은 activate 훅으로 cd 할 때마다 버전을 다시 해석한다.
+# 비대화형(스크립트, 에디터, 에이전트 도구)은 그 훅이 돌지 않으므로 shims 를 PATH 맨 앞에 둔다.
+# activate 를 비대화형에서도 하면 셸이 뜬 디렉터리 기준 버전이 박힌 채 바뀌지 않는다.
+if [[ -o interactive ]]; then
+  eval "$(mise activate zsh)"
+else
+  export PATH="$HOME/.local/share/mise/shims:$PATH"
+fi
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 # Codenbutter shared functions (pb, saml-login, etc.)
