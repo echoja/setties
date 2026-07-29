@@ -79,6 +79,10 @@ export PATH="/usr/local/go/bin:$(go env GOPATH)/bin:$PATH"
 # vscode shell integration (자동 주입 시 재source 방지)
 [[ "$TERM_PROGRAM" == "vscode" && "$VSCODE_INJECTION" != "1" ]] && . "$(code --locate-shell-integration-path zsh)"
 
+# Nuxt/Vite DevTools "open in editor" 를 VS Code 로 강제한다.
+# launch-editor 가 LAUNCH_EDITOR 를 최우선으로 읽고, 없으면 실행 중인 IDE(Rider 등) 를 추측한다.
+export LAUNCH_EDITOR=code
+
 # cinesopa
 alias ssh-cinesopa="ssh -i ~/LightsailDefaultKey-ap-northeast-ezkorry.pem bitnami@13.209.62.19"
 export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
