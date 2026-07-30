@@ -1,0 +1,5 @@
+# 머신과 무관한 git 설정. ~/.gitconfig 에서 include 로 끌어온다.
+# 사용자 identity(user.name, user.email, user.signingkey)는 머신마다 달라 여기 두지 않는다.
+
+[diff]
+	algorithm = histogram

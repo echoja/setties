@@ -142,6 +142,20 @@
       ],
       "expected": "success",
       "fix": "open -a Tailscale"
+    },
+    {
+      "id": "git-diff-histogram",
+      "label": "git diff algorithm=histogram",
+      "kind": "command",
+      "argv": [
+        "git",
+        "config",
+        "--get",
+        "diff.algorithm",
+        "^histogram$"
+      ],
+      "expected": "success",
+      "fix": "git config --global include.path '~/setties/.gitconfig.shared'"
     }
   ]
 }
