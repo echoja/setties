@@ -44,7 +44,7 @@ Body: none
 Success: 200 {"success":true}
 ```
 
-The request succeeded with the Playwright browser context's session cookies. The reusable helper uses `page.request.delete`, so tokens and cookies remain inside Playwright.
+Cookie-only `fetch` and `page.request.delete` attempts returned `401`. The reusable helper captures a short-lived authorization header from one authenticated ChatGPT application request during a browser reload, stores it only in a non-persistent page-memory property, and performs deletion with `page.evaluate(fetch)`. The credential is never returned to the helper process, printed, or written to disk. A `401` or `403` clears the volatile value and pauses the run.
 
 After deletion, this read returned `404` and the client redirected home:
 
@@ -62,7 +62,9 @@ Use one conversation linked to exactly one image as the canary. Require all of t
 ## Request and retry policy
 
 - Make one delete request per unique conversation.
-- Use concurrency 1 and randomized 800–1,200 ms pacing.
+- Prime volatile browser authorization once per browser-page lifetime; reuse it until navigation or authentication failure.
+- Use concurrency 1 and randomized 800–1,200 ms pacing by default. With explicit user approval, use 250–400 ms at the fastest and concurrency no higher than the 20-conversation batch limit. Stagger request starts within the configured pacing range.
+- In the observed 903-conversation run, concurrency 10 was the fastest stable setting. Concurrency 20 caused an extra transient retry and lower throughput, so prefer 10 unless a fresh run demonstrates otherwise.
 - Treat `200`, `204`, and `404` as complete.
 - On `429`, record the result and honor a numeric `Retry-After`; pause instead of sleeping longer than 60 seconds.
 - Retry network failures and `5xx` responses at most three times with exponential backoff and jitter.

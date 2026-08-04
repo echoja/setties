@@ -21,6 +21,7 @@ Delete chats behind the ChatGPT Images gallery without repeating successful work
 ## Prepare the manifest
 
 1. Open `https://chatgpt.com/images` in the persistent `browser` session and let the user sign in.
+   Persistent mode preserves the profile, not the browser process. Playwright CLI session names are scoped to the working directory, so reopen and run the helper from the same directory if the process exits.
 2. Load the complete authenticated cursor feed:
 
    ```bash
@@ -67,7 +68,9 @@ python3 scripts/cleanup.py run-batch \
   --limit 20
 ```
 
-The helper uses one request at a time, waits a randomized 800–1,200 ms between conversations, and atomically checkpoints every HTTP result. It treats `200`, `204`, and `404` as complete; retries transient failures conservatively; and pauses on authentication failures, unexpected statuses, or repeated failures.
+The helper uses one request at a time, waits a randomized 800–1,200 ms between conversations by default, and atomically checkpoints every HTTP result. With explicit user approval for faster processing, lower the delay no further than 250–400 ms and raise concurrency no higher than the 20-conversation batch limit. It treats `200`, `204`, and `404` as complete; retries transient failures conservatively; and pauses on authentication failures, unexpected statuses, or repeated failures.
+
+For an explicitly approved faster run, start with `--minimum-delay 0.25 --maximum-delay 0.4 --concurrency 10`. Increase only after clean batches; reduce concurrency when retries increase or throughput worsens.
 
 Report progress after every batch. Resume with the same command and run ID; completed IDs are excluded automatically.
 

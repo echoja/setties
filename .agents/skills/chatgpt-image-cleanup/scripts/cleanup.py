@@ -8,12 +8,10 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
-import random
 import re
 import subprocess
 import sys
 import tempfile
-import time
 from typing import Any
 
 
@@ -343,59 +341,295 @@ def load_gallery(session: str) -> dict[str, Any]:
     return result
 
 
-def delete_request(session: str, conversation_id: str) -> dict[str, Any]:
-    if not CONVERSATION_ID_RE.fullmatch(conversation_id):
-        raise RuntimeError("Refusing to delete an invalid conversation id")
-    source = f"""async page => {{
-      const response = await page.request.delete(
-        'https://chatgpt.com/backend-api/conversation/id/{conversation_id}',
-        {{headers: {{referer: 'https://chatgpt.com/'}}}}
+def prime_browser_authorization(session: str) -> dict[str, Any]:
+    source = r"""async page => {
+      const existing = await page.evaluate(() =>
+        typeof window.__codexCleanupAuthorization === 'string' &&
+        window.__codexCleanupAuthorization.startsWith('Bearer ')
       );
-      const headers = response.headers();
-      return JSON.stringify({{
-        status: response.status(),
-        retry_after: headers['retry-after'] || null
-      }});
-    }}"""
+      if (existing) return JSON.stringify({primed: true, reused: true});
+
+      const requestPromise = page.waitForRequest(request => {
+        const authorization = request.headers().authorization;
+        return request.url().includes('/backend-api/') &&
+          typeof authorization === 'string' &&
+          authorization.startsWith('Bearer ');
+      }, {timeout: 20000});
+      await page.reload({waitUntil: 'domcontentloaded'});
+      const request = await requestPromise;
+      const authorization = request.headers().authorization;
+      await page.evaluate(value => {
+        Object.defineProperty(window, '__codexCleanupAuthorization', {
+          value,
+          configurable: true,
+          writable: true
+        });
+      }, authorization);
+      return JSON.stringify({primed: true, reused: false});
+    }"""
     result = run_code_json(session, source)
-    status = result.get("status")
-    if not isinstance(status, int):
-        raise RuntimeError("Deletion returned an unexpected response schema")
-    retry_after = result.get("retry_after")
-    if retry_after is not None and not isinstance(retry_after, str):
-        raise RuntimeError("Deletion returned an invalid Retry-After value")
+    if result.get("primed") is not True:
+        raise RuntimeError("Could not prime volatile browser authorization")
     return result
 
 
-def retry_delay(retry_after: str | None, attempt: int) -> float:
-    if retry_after:
-        try:
-            return max(0.0, float(retry_after))
-        except ValueError:
-            pass
-    return min(60.0, (2 ** max(0, attempt - 1)) + random.uniform(0.0, 1.0))
-
-
-def save_attempt(
+def save_batch_result(
     path: Path,
     manifest: dict[str, Any],
     conversation: dict[str, Any],
-    status: str,
-    http_status: int | None,
-    error_code: str | None,
+    batch_id: str,
+    result: dict[str, Any],
 ) -> None:
+    if conversation.get("last_batch_id") == batch_id:
+        return
     updated_at = utc_now()
     conversation.update(
         {
-            "status": status,
-            "attempts": int(conversation.get("attempts", 0)) + 1,
-            "last_http_status": http_status,
-            "last_error_code": error_code,
+            "status": result["outcome"],
+            "attempts": int(conversation.get("attempts", 0)) + result["attempts"],
+            "last_http_status": result["http_status"],
+            "last_error_code": result["error_code"],
+            "last_batch_id": batch_id,
             "updated_at": updated_at,
         }
     )
     manifest["updated_at"] = updated_at
     atomic_json_write(path, manifest)
+
+
+def browser_journal(session: str) -> dict[str, Any] | None:
+    source = r"""async page => {
+      const journal = await page.evaluate(() => {
+        const raw = localStorage.getItem('codex.chatgpt-image-cleanup.journal.v1');
+        return raw ? JSON.parse(raw) : null;
+      });
+      return JSON.stringify({journal});
+    }"""
+    result = run_code_json(session, source)
+    journal = result.get("journal")
+    if journal is not None and not isinstance(journal, dict):
+        raise RuntimeError("Browser cleanup journal has an invalid schema")
+    return journal
+
+
+def clear_browser_journal(session: str, batch_id: str) -> None:
+    source = f"""async page => {{
+      return JSON.stringify(await page.evaluate(expectedBatchId => {{
+        const key = 'codex.chatgpt-image-cleanup.journal.v1';
+        const raw = localStorage.getItem(key);
+        if (!raw) return {{cleared: true, missing: true}};
+        const journal = JSON.parse(raw);
+        if (journal.batch_id !== expectedBatchId) return {{cleared: false}};
+        localStorage.removeItem(key);
+        return {{cleared: true, missing: false}};
+      }}, '{batch_id}'));
+    }}"""
+    result = run_code_json(session, source)
+    if result.get("cleared") is not True:
+        raise RuntimeError("Refusing to clear a mismatched browser cleanup journal")
+
+
+def apply_browser_journal(
+    session: str,
+    path: Path,
+    manifest: dict[str, Any],
+) -> dict[str, Any] | None:
+    journal = browser_journal(session)
+    if journal is None:
+        return None
+    if journal.get("schema_version") != 1 or journal.get("run_id") != manifest.get(
+        "run_id"
+    ):
+        raise RuntimeError("Browser cleanup journal does not match the active run")
+    batch_id = journal.get("batch_id")
+    results = journal.get("results")
+    if not isinstance(batch_id, str) or not isinstance(results, list):
+        raise RuntimeError("Browser cleanup journal is malformed")
+
+    conversations = {
+        item.get("conversation_id"): item for item in manifest.get("conversations", [])
+    }
+    for result in results:
+        if not isinstance(result, dict):
+            raise RuntimeError("Browser cleanup result is malformed")
+        conversation_id = result.get("conversation_id")
+        conversation = conversations.get(conversation_id)
+        if conversation is None or not CONVERSATION_ID_RE.fullmatch(conversation_id):
+            raise RuntimeError("Browser cleanup result references an unknown conversation")
+        attempts = result.get("attempts")
+        http_status = result.get("http_status")
+        outcome = result.get("outcome")
+        error_code = result.get("error_code")
+        if (
+            not isinstance(attempts, int)
+            or not 1 <= attempts <= 3
+            or (http_status is not None and not isinstance(http_status, int))
+            or outcome not in {"complete", "retryable", "paused"}
+            or (error_code is not None and not isinstance(error_code, str))
+        ):
+            raise RuntimeError("Browser cleanup result has invalid fields")
+        save_batch_result(path, manifest, conversation, batch_id, result)
+
+    clear_browser_journal(session, batch_id)
+    return journal
+
+
+def delete_browser_batch(
+    session: str,
+    run_id: str,
+    conversation_ids: list[str],
+    minimum_delay: float,
+    maximum_delay: float,
+    concurrency: int,
+) -> dict[str, Any]:
+    if not conversation_ids or len(conversation_ids) > 20:
+        raise RuntimeError("Browser batch must contain between 1 and 20 conversations")
+    if any(not CONVERSATION_ID_RE.fullmatch(item) for item in conversation_ids):
+        raise RuntimeError("Browser batch contains an invalid conversation id")
+    config = json.dumps(
+        {
+            "run_id": run_id,
+            "conversation_ids": conversation_ids,
+            "minimum_delay_ms": int(minimum_delay * 1000),
+            "maximum_delay_ms": int(maximum_delay * 1000),
+            "concurrency": concurrency,
+        }
+    )
+    source = f"""async page => {{
+      const config = {config};
+      return JSON.stringify(await page.evaluate(async config => {{
+        const key = 'codex.chatgpt-image-cleanup.journal.v1';
+        const authorization = window.__codexCleanupAuthorization;
+        if (typeof authorization !== 'string' || !authorization.startsWith('Bearer ')) {{
+          return {{error: 'authorization_not_primed'}};
+        }}
+        const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+        const jitter = (minimum, maximum) =>
+          minimum + Math.floor(Math.random() * (maximum - minimum + 1));
+        const batchId = crypto.randomUUID();
+        const journal = {{
+          schema_version: 1,
+          run_id: config.run_id,
+          batch_id: batchId,
+          results: [],
+          delete_calls: 0,
+          paused_reason: null
+        }};
+        localStorage.setItem(key, JSON.stringify(journal));
+
+        let nextIndex = 0;
+        let nextStartAt = Date.now();
+        const acquireStartSlot = async () => {{
+          const scheduledAt = nextStartAt;
+          nextStartAt += jitter(config.minimum_delay_ms, config.maximum_delay_ms);
+          await wait(Math.max(0, scheduledAt - Date.now()));
+        }};
+
+        const processConversation = async conversationId => {{
+          let finalResult = null;
+          for (let attempt = 1; attempt <= 3; attempt++) {{
+            let response;
+            try {{
+              response = await fetch('/backend-api/conversation/id/' + conversationId, {{
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {{authorization: window.__codexCleanupAuthorization}}
+              }});
+              journal.delete_calls += 1;
+            }} catch {{
+              if (attempt === 3) {{
+                finalResult = {{
+                  conversation_id: conversationId,
+                  attempts: attempt,
+                  http_status: null,
+                  outcome: 'retryable',
+                  error_code: 'network_failure'
+                }};
+                journal.paused_reason = 'three_consecutive_failures';
+                break;
+              }}
+              await wait(Math.min(60000, (2 ** (attempt - 1)) * 1000 + jitter(0, 1000)));
+              continue;
+            }}
+
+            const status = response.status;
+            if (status === 200 || status === 204 || status === 404) {{
+              finalResult = {{
+                conversation_id: conversationId,
+                attempts: attempt,
+                http_status: status,
+                outcome: 'complete',
+                error_code: null
+              }};
+              break;
+            }}
+            if (status === 401 || status === 403) {{
+              window.__codexCleanupAuthorization = null;
+              finalResult = {{
+                conversation_id: conversationId,
+                attempts: attempt,
+                http_status: status,
+                outcome: 'paused',
+                error_code: 'authentication_failed'
+              }};
+              journal.paused_reason = 'authentication_failed';
+              break;
+            }}
+            if (status === 429 || (status >= 500 && status <= 599)) {{
+              const retryAfter = Number(response.headers.get('retry-after'));
+              const delay = Number.isFinite(retryAfter) && retryAfter >= 0
+                ? retryAfter * 1000
+                : Math.min(60000, (2 ** (attempt - 1)) * 1000 + jitter(0, 1000));
+              if (attempt === 3 || delay > 60000) {{
+                finalResult = {{
+                  conversation_id: conversationId,
+                  attempts: attempt,
+                  http_status: status,
+                  outcome: 'retryable',
+                  error_code: status === 429 ? 'rate_limited' : 'server_error'
+                }};
+                journal.paused_reason = status === 429
+                  ? 'rate_limited'
+                  : 'three_consecutive_failures';
+                break;
+              }}
+              await wait(delay);
+              continue;
+            }}
+            finalResult = {{
+              conversation_id: conversationId,
+              attempts: attempt,
+              http_status: status,
+              outcome: 'paused',
+              error_code: 'unexpected_http_status'
+            }};
+            journal.paused_reason = 'unexpected_http_status';
+            break;
+          }}
+
+          if (!finalResult) throw new Error('Deletion attempt ended without a result');
+          journal.results.push(finalResult);
+          localStorage.setItem(key, JSON.stringify(journal));
+        }};
+
+        const worker = async () => {{
+          while (!journal.paused_reason) {{
+            const index = nextIndex++;
+            if (index >= config.conversation_ids.length) return;
+            await acquireStartSlot();
+            if (journal.paused_reason) return;
+            await processConversation(config.conversation_ids[index]);
+          }}
+        }};
+        const workerCount = Math.min(config.concurrency, config.conversation_ids.length);
+        await Promise.all(Array.from({{length: workerCount}}, () => worker()));
+        return journal;
+      }}, config));
+    }}"""
+    result = run_code_json(session, source)
+    if result.get("error") == "authorization_not_primed":
+        raise RuntimeError("Volatile browser authorization is not primed")
+    return result
 
 
 def run_batch(
@@ -404,6 +638,7 @@ def run_batch(
     limit: int,
     minimum_delay: float,
     maximum_delay: float,
+    concurrency: int,
 ) -> dict[str, Any]:
     path, manifest = load_manifest()
     if manifest.get("run_id") != confirmed_run_id:
@@ -417,8 +652,12 @@ def run_batch(
         raise RuntimeError("The checkpoint does not contain the verified delete request")
     if not 1 <= limit <= 20:
         raise RuntimeError("Batch limit must be between 1 and 20")
-    if not 0.8 <= minimum_delay <= maximum_delay:
-        raise RuntimeError("Delay range must start at 0.8 seconds or slower")
+    if not 0.25 <= minimum_delay <= maximum_delay:
+        raise RuntimeError("Delay range must start at 0.25 seconds or slower")
+    if not 1 <= concurrency <= 20:
+        raise RuntimeError("Concurrency must be between 1 and 20")
+
+    apply_browser_journal(session, path, manifest)
 
     candidates = [
         item
@@ -428,88 +667,21 @@ def run_batch(
     completed = 0
     calls = 0
     paused_reason: str | None = None
-
-    for index, conversation in enumerate(candidates):
-        if index > 0:
-            time.sleep(random.uniform(minimum_delay, maximum_delay))
-        conversation_id = conversation["conversation_id"]
-        per_item_attempts = 0
-
-        while per_item_attempts < 3:
-            per_item_attempts += 1
-            try:
-                result = delete_request(session, conversation_id)
-                calls += 1
-                http_status = result["status"]
-            except (RuntimeError, json.JSONDecodeError) as error:
-                save_attempt(
-                    path,
-                    manifest,
-                    conversation,
-                    "retryable",
-                    None,
-                    "network_or_cli_failure",
-                )
-                if per_item_attempts >= 3:
-                    paused_reason = "three_consecutive_failures"
-                    break
-                time.sleep(retry_delay(None, per_item_attempts))
-                continue
-
-            if http_status in {200, 204, 404}:
-                save_attempt(path, manifest, conversation, "complete", http_status, None)
-                completed += 1
-                break
-
-            if http_status == 429:
-                save_attempt(
-                    path,
-                    manifest,
-                    conversation,
-                    "retryable",
-                    http_status,
-                    "rate_limited",
-                )
-                delay = retry_delay(result.get("retry_after"), per_item_attempts)
-                if delay > 60 or per_item_attempts >= 3:
-                    paused_reason = "rate_limited"
-                    break
-                time.sleep(delay)
-                continue
-
-            if 500 <= http_status <= 599:
-                save_attempt(
-                    path,
-                    manifest,
-                    conversation,
-                    "retryable",
-                    http_status,
-                    "server_error",
-                )
-                if per_item_attempts >= 3:
-                    paused_reason = "three_consecutive_failures"
-                    break
-                time.sleep(retry_delay(None, per_item_attempts))
-                continue
-
-            error_code = (
-                "authentication_failed"
-                if http_status in {401, 403}
-                else "unexpected_http_status"
-            )
-            save_attempt(
-                path,
-                manifest,
-                conversation,
-                "paused",
-                http_status,
-                error_code,
-            )
-            paused_reason = error_code
-            break
-
-        if paused_reason:
-            break
+    if candidates:
+        prime_browser_authorization(session)
+        journal = delete_browser_batch(
+            session,
+            confirmed_run_id,
+            [item["conversation_id"] for item in candidates],
+            minimum_delay,
+            maximum_delay,
+            concurrency,
+        )
+        apply_browser_journal(session, path, manifest)
+        results = journal.get("results", [])
+        completed = sum(item.get("outcome") == "complete" for item in results)
+        calls = int(journal.get("delete_calls", 0))
+        paused_reason = journal.get("paused_reason")
 
     summary = manifest_status()
     summary.update(
@@ -520,6 +692,35 @@ def run_batch(
         }
     )
     return summary
+
+
+def record_paused_success(
+    http_status: int,
+    additional_attempts: int,
+) -> dict[str, Any]:
+    if http_status not in {200, 204, 404}:
+        raise RuntimeError("Paused recovery requires a successful HTTP status")
+    if not 1 <= additional_attempts <= 10:
+        raise RuntimeError("Additional attempts must be between 1 and 10")
+    path, manifest = load_manifest()
+    paused = [
+        item for item in manifest.get("conversations", []) if item.get("status") == "paused"
+    ]
+    if len(paused) != 1:
+        raise RuntimeError("Paused recovery requires exactly one paused conversation")
+    updated_at = utc_now()
+    paused[0].update(
+        {
+            "status": "complete",
+            "attempts": int(paused[0].get("attempts", 0)) + additional_attempts,
+            "last_http_status": http_status,
+            "last_error_code": None,
+            "updated_at": updated_at,
+        }
+    )
+    manifest["updated_at"] = updated_at
+    atomic_json_write(path, manifest)
+    return manifest_status()
 
 
 def verify_and_reconcile(session: str) -> dict[str, Any]:
@@ -642,6 +843,14 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--limit", type=int, default=20)
     run.add_argument("--minimum-delay", type=float, default=0.8)
     run.add_argument("--maximum-delay", type=float, default=1.2)
+    run.add_argument("--concurrency", type=int, default=1)
+
+    recovery = subparsers.add_parser(
+        "record-paused-success",
+        help="Record an explicitly verified successful recovery for one paused item",
+    )
+    recovery.add_argument("--http-status", type=int, required=True)
+    recovery.add_argument("--additional-attempts", type=int, required=True)
 
     verify = subparsers.add_parser(
         "verify",
@@ -673,6 +882,12 @@ def main() -> int:
                 args.limit,
                 args.minimum_delay,
                 args.maximum_delay,
+                args.concurrency,
+            )
+        elif args.command == "record-paused-success":
+            output = record_paused_success(
+                args.http_status,
+                args.additional_attempts,
             )
         elif args.command == "verify":
             output = verify_and_reconcile(args.session)
