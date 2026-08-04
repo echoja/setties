@@ -18,6 +18,12 @@
 - When the user says "remember this" or "기억해줘", update the durable instruction file for the active tool and scope instead of creating an ad hoc memory file: `AGENTS.md` for Codex, `CLAUDE.md` for Claude.
 - In `~/setties`, edit `.codex/AGENTS.md` as the canonical instruction file; `.claude/CLAUDE.md` points to it.
 
+## Browser Automation
+
+- For reusable browser automation, use the Playwright CLI session named `browser`.
+- Open it as a persistent, visible Chrome session with `playwright-cli -s=browser open <url> --persistent --headed`.
+- Reuse that session and its profile across tasks so authenticated state is retained. Do not delete its browser data unless the user explicitly asks.
+
 ## Setties Repo (`~/setties`)
 
 - The user's dotfiles and system config are managed in `~/setties` (git repo: `echoja/setties`).
