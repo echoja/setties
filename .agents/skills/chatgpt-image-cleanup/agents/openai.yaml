@@ -1,0 +1,4 @@
+interface:
+  display_name: "ChatGPT Image Cleanup"
+  short_description: "Safely remove chats behind all ChatGPT images"
+  default_prompt: "Use $chatgpt-image-cleanup to remove every conversation linked from my ChatGPT Images gallery with resumable checkpoints."

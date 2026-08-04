@@ -42,6 +42,10 @@
       "description": "Frontend single-issue GitHub backlog skill"
     },
     {
+      "key": ".agents/skills/chatgpt-image-cleanup",
+      "description": "Resumable ChatGPT Images conversation cleanup skill"
+    },
+    {
       "key": ".claude/settings.json",
       "description": "Claude Code settings"
     },
