@@ -46,6 +46,10 @@
       "description": "Resumable ChatGPT Images conversation cleanup skill"
     },
     {
+      "key": ".agents/skills/dev-to-pr",
+      "description": "Single-skill worktree-to-PR development pipeline"
+    },
+    {
       "key": ".claude/settings.json",
       "description": "Claude Code settings"
     },
