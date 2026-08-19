@@ -22,6 +22,14 @@ IMAGE_REQUEST_RE = re.compile(
 CONVERSATION_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 )
+RUN_ID_RE = re.compile(r"^\d{8}T\d{6}Z$")
+FAST_BATCH_LIMIT = 20
+FAST_CONCURRENCY = 10
+FAST_MINIMUM_DELAY = 0.25
+FAST_MAXIMUM_DELAY = 0.4
+DELETE_REQUEST_TIMEOUT_MS = 30_000
+CLI_TIMEOUT_SECONDS = 60
+BATCH_CLI_TIMEOUT_SECONDS = 240
 
 
 def utc_now() -> str:
@@ -34,22 +42,41 @@ def state_root() -> Path:
     return root / "chatgpt-image-cleanup"
 
 
-def run_cli(session: str, *args: str) -> str:
+def run_cli(
+    session: str,
+    *args: str,
+    timeout: int = CLI_TIMEOUT_SECONDS,
+) -> str:
     command = ["playwright-cli", f"-s={session}", *args]
-    completed = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("playwright-cli timed out") from None
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip()
         raise RuntimeError(f"playwright-cli failed: {detail}")
     return completed.stdout
 
 
-def run_code_json(session: str, source: str) -> dict[str, Any]:
-    raw = run_cli(session, "--raw", "run-code", source).strip()
+def run_code_json(
+    session: str,
+    source: str,
+    *,
+    timeout: int = CLI_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
+    raw = run_cli(
+        session,
+        "--raw",
+        "run-code",
+        source,
+        timeout=timeout,
+    ).strip()
     value: Any = json.loads(raw)
     if isinstance(value, str):
         value = json.loads(value)
@@ -108,13 +135,24 @@ def atomic_json_write(path: Path, value: dict[str, Any]) -> None:
 def load_manifest() -> tuple[Path, dict[str, Any]]:
     path = active_manifest_path()
     manifest = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
-        raise RuntimeError("Unsupported cleanup checkpoint schema")
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("execution_mode") != "fast"
+        or not isinstance(manifest.get("run_id"), str)
+        or not RUN_ID_RE.fullmatch(manifest["run_id"])
+        or manifest["run_id"] != path.parent.name
+        or not isinstance(manifest.get("conversations"), list)
+    ):
+        raise RuntimeError("Unsupported cleanup checkpoint format")
     return path, manifest
 
 
-def build_manifest(session: str, expected_images: int | None) -> dict[str, Any]:
-    pages = captured_image_pages(session)
+def build_manifest(
+    session: str,
+    expected_images: int | None,
+    request_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    pages = captured_image_pages(session, request_ids)
     images_by_id: dict[str, dict[str, Any]] = {}
     ordered_image_ids: list[str] = []
 
@@ -148,29 +186,24 @@ def build_manifest(session: str, expected_images: int | None) -> dict[str, Any]:
             conversation_order.append(conversation_id)
         counts[conversation_id] += 1
 
-    canary_id = next(
-        (conversation_id for conversation_id in conversation_order if counts[conversation_id] == 1),
-        None,
-    )
-    if canary_id is None:
-        raise RuntimeError("No single-image conversation is available for the canary")
-
     created_at = utc_now()
     run_id = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_dir = state_root() / run_id
     manifest_path = run_dir / "manifest.json"
     manifest: dict[str, Any] = {
-        "schema_version": 1,
         "run_id": run_id,
         "session": session,
         "source": "captured_image_gen_responses",
+        "execution_mode": "fast",
+        "batch_limit": FAST_BATCH_LIMIT,
+        "concurrency": FAST_CONCURRENCY,
+        "minimum_delay": FAST_MINIMUM_DELAY,
+        "maximum_delay": FAST_MAXIMUM_DELAY,
         "created_at": created_at,
         "updated_at": created_at,
         "captured_pages": len(pages),
         "image_count": len(images_by_id),
         "conversation_count": len(counts),
-        "canary_conversation_id": canary_id,
-        "canary_status": "pending",
         "conversations": [
             {
                 "conversation_id": conversation_id,
@@ -189,7 +222,6 @@ def build_manifest(session: str, expected_images: int | None) -> dict[str, Any]:
     atomic_json_write(
         active_path,
         {
-            "schema_version": 1,
             "run_id": run_id,
             "manifest_path": str(manifest_path),
             "updated_at": created_at,
@@ -202,7 +234,7 @@ def build_manifest(session: str, expected_images: int | None) -> dict[str, Any]:
         "image_count": len(images_by_id),
         "conversation_count": len(counts),
         "shared_image_excess": len(images_by_id) - len(counts),
-        "canary_conversation_id": canary_id,
+        "execution_mode": "fast",
     }
 
 
@@ -211,10 +243,19 @@ def active_manifest_path() -> Path:
     if not active_path.exists():
         raise RuntimeError("No active cleanup checkpoint exists")
     active = json.loads(active_path.read_text(encoding="utf-8"))
+    if not isinstance(active, dict):
+        raise RuntimeError("Unsupported active checkpoint format")
+    run_id = active.get("run_id")
+    if not isinstance(run_id, str) or not RUN_ID_RE.fullmatch(run_id):
+        raise RuntimeError("The active checkpoint has an invalid run id")
     manifest_path = active.get("manifest_path")
     if not isinstance(manifest_path, str):
         raise RuntimeError("The active checkpoint has an invalid manifest path")
-    return Path(manifest_path)
+    path = Path(manifest_path)
+    expected = state_root() / run_id / "manifest.json"
+    if path.resolve() != expected.resolve():
+        raise RuntimeError("The active checkpoint has an unexpected manifest path")
+    return path
 
 
 def manifest_status() -> dict[str, Any]:
@@ -228,69 +269,29 @@ def manifest_status() -> dict[str, Any]:
         "manifest_path": str(path),
         "image_count": manifest.get("image_count"),
         "conversation_count": manifest.get("conversation_count"),
-        "canary_status": manifest.get("canary_status"),
+        "execution_mode": manifest.get("execution_mode"),
         "reconciliation_status": manifest.get("reconciliation_status"),
         "statuses": statuses,
     }
 
 
-def record_canary(
-    delete_http_status: int,
-    image_count_after: int,
-    conversation_get_status: int,
-) -> dict[str, Any]:
-    path, manifest = load_manifest()
-    canary_id = manifest.get("canary_conversation_id")
-    if not isinstance(canary_id, str) or not CONVERSATION_ID_RE.fullmatch(canary_id):
-        raise RuntimeError("The active checkpoint has an invalid canary id")
-
-    expected_after = manifest.get("image_count") - 1
-    if image_count_after != expected_after:
+def require_authenticated_session(session: str) -> None:
+    source = r"""async page => {
+      await page.goto('https://chatgpt.com/images', {waitUntil: 'domcontentloaded'});
+      const loginButtons = await page.getByRole('button', {name: /^Log in$/}).count();
+      const profileButtons = await page.getByRole(
+        'button', {name: /open profile menu/i}
+      ).count();
+      return JSON.stringify({
+        authenticated: loginButtons === 0 && profileButtons > 0
+      });
+    }"""
+    result = run_code_json(session, source)
+    if result.get("authenticated") is not True:
         raise RuntimeError(
-            f"Expected {expected_after} images after canary, observed {image_count_after}"
+            "The browser session is not authenticated. Sign in in the existing "
+            "headed browser, then run prepare again from the same working directory."
         )
-    if delete_http_status != 200 or conversation_get_status != 404:
-        raise RuntimeError("Canary verification did not match the required 200/404 statuses")
-
-    conversation = next(
-        (
-            item
-            for item in manifest.get("conversations", [])
-            if item.get("conversation_id") == canary_id
-        ),
-        None,
-    )
-    if conversation is None or conversation.get("image_count") != 1:
-        raise RuntimeError("The canary is not a single-image conversation in the manifest")
-
-    updated_at = utc_now()
-    conversation.update(
-        {
-            "status": "complete",
-            "attempts": max(1, int(conversation.get("attempts", 0))),
-            "last_http_status": delete_http_status,
-            "updated_at": updated_at,
-        }
-    )
-    manifest.update(
-        {
-            "updated_at": updated_at,
-            "canary_status": "verified",
-            "image_count_after_canary": image_count_after,
-            "verified_delete_request": {
-                "method": "DELETE",
-                "path_template": "/backend-api/conversation/id/{conversation_id}",
-                "body": None,
-                "success_status": delete_http_status,
-            },
-            "canary_verification": {
-                "conversation_get_status": conversation_get_status,
-                "verified_at": updated_at,
-            },
-        }
-    )
-    atomic_json_write(path, manifest)
-    return manifest_status()
 
 
 def load_gallery(session: str) -> dict[str, Any]:
@@ -339,6 +340,28 @@ def load_gallery(session: str) -> dict[str, Any]:
     ]
     result["request_ids"] = new_request_ids or after_request_ids
     return result
+
+
+def prepare_run(session: str) -> dict[str, Any]:
+    active_path = state_root() / "active.json"
+    if active_path.exists():
+        _, active_manifest = load_manifest()
+        if active_manifest.get("reconciliation_status") == "complete":
+            raise RuntimeError(
+                "A completed cleanup checkpoint is still active. Obtain approval and "
+                "remove it before preparing another run."
+            )
+        raise RuntimeError(
+            "An unfinished cleanup checkpoint is already active. Resume and verify "
+            "that run before preparing another one."
+        )
+    require_authenticated_session(session)
+    gallery = load_gallery(session)
+    return build_manifest(
+        session,
+        gallery["image_count"],
+        gallery["request_ids"],
+    )
 
 
 def prime_browser_authorization(session: str) -> dict[str, Any]:
@@ -400,7 +423,7 @@ def save_batch_result(
 def browser_journal(session: str) -> dict[str, Any] | None:
     source = r"""async page => {
       const journal = await page.evaluate(() => {
-        const raw = localStorage.getItem('codex.chatgpt-image-cleanup.journal.v1');
+        const raw = localStorage.getItem('codex.chatgpt-image-cleanup.journal');
         return raw ? JSON.parse(raw) : null;
       });
       return JSON.stringify({journal});
@@ -415,7 +438,7 @@ def browser_journal(session: str) -> dict[str, Any] | None:
 def clear_browser_journal(session: str, batch_id: str) -> None:
     source = f"""async page => {{
       return JSON.stringify(await page.evaluate(expectedBatchId => {{
-        const key = 'codex.chatgpt-image-cleanup.journal.v1';
+        const key = 'codex.chatgpt-image-cleanup.journal';
         const raw = localStorage.getItem(key);
         if (!raw) return {{cleared: true, missing: true}};
         const journal = JSON.parse(raw);
@@ -437,9 +460,7 @@ def apply_browser_journal(
     journal = browser_journal(session)
     if journal is None:
         return None
-    if journal.get("schema_version") != 1 or journal.get("run_id") != manifest.get(
-        "run_id"
-    ):
+    if journal.get("run_id") != manifest.get("run_id"):
         raise RuntimeError("Browser cleanup journal does not match the active run")
     batch_id = journal.get("batch_id")
     results = journal.get("results")
@@ -478,11 +499,8 @@ def delete_browser_batch(
     session: str,
     run_id: str,
     conversation_ids: list[str],
-    minimum_delay: float,
-    maximum_delay: float,
-    concurrency: int,
 ) -> dict[str, Any]:
-    if not conversation_ids or len(conversation_ids) > 20:
+    if not conversation_ids or len(conversation_ids) > FAST_BATCH_LIMIT:
         raise RuntimeError("Browser batch must contain between 1 and 20 conversations")
     if any(not CONVERSATION_ID_RE.fullmatch(item) for item in conversation_ids):
         raise RuntimeError("Browser batch contains an invalid conversation id")
@@ -490,15 +508,16 @@ def delete_browser_batch(
         {
             "run_id": run_id,
             "conversation_ids": conversation_ids,
-            "minimum_delay_ms": int(minimum_delay * 1000),
-            "maximum_delay_ms": int(maximum_delay * 1000),
-            "concurrency": concurrency,
+            "minimum_delay_ms": int(FAST_MINIMUM_DELAY * 1000),
+            "maximum_delay_ms": int(FAST_MAXIMUM_DELAY * 1000),
+            "concurrency": FAST_CONCURRENCY,
+            "request_timeout_ms": DELETE_REQUEST_TIMEOUT_MS,
         }
     )
     source = f"""async page => {{
       const config = {config};
       return JSON.stringify(await page.evaluate(async config => {{
-        const key = 'codex.chatgpt-image-cleanup.journal.v1';
+        const key = 'codex.chatgpt-image-cleanup.journal';
         const authorization = window.__codexCleanupAuthorization;
         if (typeof authorization !== 'string' || !authorization.startsWith('Bearer ')) {{
           return {{error: 'authorization_not_primed'}};
@@ -508,7 +527,6 @@ def delete_browser_batch(
           minimum + Math.floor(Math.random() * (maximum - minimum + 1));
         const batchId = crypto.randomUUID();
         const journal = {{
-          schema_version: 1,
           run_id: config.run_id,
           batch_id: batchId,
           results: [],
@@ -529,13 +547,19 @@ def delete_browser_batch(
           let finalResult = null;
           for (let attempt = 1; attempt <= 3; attempt++) {{
             let response;
+            let timeoutId;
             try {{
+              const controller = new AbortController();
+              timeoutId = setTimeout(
+                () => controller.abort(), config.request_timeout_ms
+              );
+              journal.delete_calls += 1;
               response = await fetch('/backend-api/conversation/id/' + conversationId, {{
                 method: 'DELETE',
                 credentials: 'include',
-                headers: {{authorization: window.__codexCleanupAuthorization}}
+                headers: {{authorization: window.__codexCleanupAuthorization}},
+                signal: controller.signal
               }});
-              journal.delete_calls += 1;
             }} catch {{
               if (attempt === 3) {{
                 finalResult = {{
@@ -550,6 +574,8 @@ def delete_browser_batch(
               }}
               await wait(Math.min(60000, (2 ** (attempt - 1)) * 1000 + jitter(0, 1000)));
               continue;
+            }} finally {{
+              if (timeoutId) clearTimeout(timeoutId);
             }}
 
             const status = response.status;
@@ -576,7 +602,10 @@ def delete_browser_batch(
               break;
             }}
             if (status === 429 || (status >= 500 && status <= 599)) {{
-              const retryAfter = Number(response.headers.get('retry-after'));
+              const retryAfterHeader = response.headers.get('retry-after');
+              const retryAfter = retryAfterHeader === null
+                ? Number.NaN
+                : Number(retryAfterHeader);
               const delay = Number.isFinite(retryAfter) && retryAfter >= 0
                 ? retryAfter * 1000
                 : Math.min(60000, (2 ** (attempt - 1)) * 1000 + jitter(0, 1000));
@@ -626,7 +655,11 @@ def delete_browser_batch(
         return journal;
       }}, config));
     }}"""
-    result = run_code_json(session, source)
+    result = run_code_json(
+        session,
+        source,
+        timeout=BATCH_CLI_TIMEOUT_SECONDS,
+    )
     if result.get("error") == "authorization_not_primed":
         raise RuntimeError("Volatile browser authorization is not primed")
     return result
@@ -635,35 +668,21 @@ def delete_browser_batch(
 def run_batch(
     session: str,
     confirmed_run_id: str,
-    limit: int,
-    minimum_delay: float,
-    maximum_delay: float,
-    concurrency: int,
 ) -> dict[str, Any]:
     path, manifest = load_manifest()
     if manifest.get("run_id") != confirmed_run_id:
         raise RuntimeError("--confirm-run-id does not match the active checkpoint")
-    if manifest.get("canary_status") != "verified":
-        raise RuntimeError("A verified canary is required before bulk deletion")
-    verified = manifest.get("verified_delete_request", {})
-    if verified.get("method") != "DELETE" or verified.get("path_template") != (
-        "/backend-api/conversation/id/{conversation_id}"
-    ):
-        raise RuntimeError("The checkpoint does not contain the verified delete request")
-    if not 1 <= limit <= 20:
-        raise RuntimeError("Batch limit must be between 1 and 20")
-    if not 0.25 <= minimum_delay <= maximum_delay:
-        raise RuntimeError("Delay range must start at 0.25 seconds or slower")
-    if not 1 <= concurrency <= 20:
-        raise RuntimeError("Concurrency must be between 1 and 20")
+    if manifest.get("execution_mode") != "fast":
+        raise RuntimeError("The checkpoint is not configured for fast execution")
 
     apply_browser_journal(session, path, manifest)
 
     candidates = [
         item
         for item in manifest.get("conversations", [])
-        if item.get("status") in {"pending", "pending_reconcile", "retryable"}
-    ][:limit]
+        if item.get("status")
+        in {"pending", "pending_reconcile", "retryable", "paused"}
+    ][:FAST_BATCH_LIMIT]
     completed = 0
     calls = 0
     paused_reason: str | None = None
@@ -673,9 +692,6 @@ def run_batch(
             session,
             confirmed_run_id,
             [item["conversation_id"] for item in candidates],
-            minimum_delay,
-            maximum_delay,
-            concurrency,
         )
         apply_browser_journal(session, path, manifest)
         results = journal.get("results", [])
@@ -694,36 +710,53 @@ def run_batch(
     return summary
 
 
-def record_paused_success(
-    http_status: int,
-    additional_attempts: int,
-) -> dict[str, Any]:
-    if http_status not in {200, 204, 404}:
-        raise RuntimeError("Paused recovery requires a successful HTTP status")
-    if not 1 <= additional_attempts <= 10:
-        raise RuntimeError("Additional attempts must be between 1 and 10")
-    path, manifest = load_manifest()
-    paused = [
-        item for item in manifest.get("conversations", []) if item.get("status") == "paused"
-    ]
-    if len(paused) != 1:
-        raise RuntimeError("Paused recovery requires exactly one paused conversation")
-    updated_at = utc_now()
-    paused[0].update(
-        {
-            "status": "complete",
-            "attempts": int(paused[0].get("attempts", 0)) + additional_attempts,
-            "last_http_status": http_status,
-            "last_error_code": None,
-            "updated_at": updated_at,
-        }
+def remaining_conversation_count(statuses: dict[str, int]) -> int:
+    return sum(
+        statuses.get(status, 0)
+        for status in {"pending", "pending_reconcile", "retryable", "paused"}
     )
-    manifest["updated_at"] = updated_at
-    atomic_json_write(path, manifest)
-    return manifest_status()
+
+
+def run_all(session: str, confirmed_run_id: str) -> dict[str, Any]:
+    batch_number = 0
+    while True:
+        before = manifest_status()
+        if before.get("run_id") != confirmed_run_id:
+            raise RuntimeError("--confirm-run-id does not match the active checkpoint")
+        before_remaining = remaining_conversation_count(before["statuses"])
+        if before_remaining == 0:
+            before.update({"run_status": "complete", "batches": batch_number})
+            return before
+
+        summary = run_batch(session, confirmed_run_id)
+        batch_number += 1
+        remaining = remaining_conversation_count(summary["statuses"])
+        progress = {
+            "event": "batch",
+            "batch": batch_number,
+            "batch_completed": summary["batch_completed"],
+            "delete_calls": summary["delete_calls"],
+            "remaining_conversations": remaining,
+            "paused_reason": summary["paused_reason"],
+        }
+        print(json.dumps(progress, ensure_ascii=False, sort_keys=True), flush=True)
+
+        if summary["paused_reason"] is not None:
+            summary.update({"run_status": "paused", "batches": batch_number})
+            return summary
+        if remaining >= before_remaining and summary["batch_completed"] == 0:
+            summary.update(
+                {
+                    "run_status": "paused",
+                    "batches": batch_number,
+                    "paused_reason": "no_progress",
+                }
+            )
+            return summary
 
 
 def verify_and_reconcile(session: str) -> dict[str, Any]:
+    require_authenticated_session(session)
     gallery = load_gallery(session)
     pages = captured_image_pages(session, gallery["request_ids"])
     residual_images: dict[str, str] = {}
@@ -807,56 +840,66 @@ def verify_and_reconcile(session: str) -> dict[str, Any]:
     return summary
 
 
+def clear_completed_state(confirmed_run_id: str) -> dict[str, Any]:
+    path, manifest = load_manifest()
+    if manifest.get("run_id") != confirmed_run_id:
+        raise RuntimeError("--confirm-run-id does not match the active checkpoint")
+    if (
+        manifest.get("reconciliation_status") != "complete"
+        or manifest.get("current_image_count") != 0
+    ):
+        raise RuntimeError("Only a verified zero-residual checkpoint can be removed")
+
+    root = state_root().resolve()
+    expected_run_dir = (root / confirmed_run_id).resolve()
+    expected_manifest = expected_run_dir / "manifest.json"
+    if path.resolve() != expected_manifest or path.parent.resolve() != expected_run_dir:
+        raise RuntimeError("The active checkpoint path is outside its expected run directory")
+    entries = list(expected_run_dir.iterdir())
+    if len(entries) != 1 or entries[0].resolve() != expected_manifest:
+        raise RuntimeError("The checkpoint directory contains unexpected files")
+
+    active_path = root / "active.json"
+    active = json.loads(active_path.read_text(encoding="utf-8"))
+    if active.get("manifest_path") != str(path):
+        raise RuntimeError("The active checkpoint pointer does not match the manifest")
+
+    active_path.unlink()
+    path.unlink()
+    expected_run_dir.rmdir()
+    return {"run_id": confirmed_run_id, "state_removed": True}
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Manage resumable ChatGPT Images cleanup checkpoints"
     )
     subparsers = result.add_subparsers(dest="command", required=True)
 
-    manifest = subparsers.add_parser(
-        "manifest-from-capture",
-        help="Build a manifest from responses already captured by playwright-cli",
+    prepare = subparsers.add_parser(
+        "prepare",
+        help="Verify authentication, inventory the gallery, and create a checkpoint",
     )
-    manifest.add_argument("--session", default="browser")
-    manifest.add_argument("--expected-images", type=int)
-
-    canary = subparsers.add_parser(
-        "record-canary",
-        help="Record a successfully verified single-conversation canary",
-    )
-    canary.add_argument("--delete-http-status", type=int, required=True)
-    canary.add_argument("--image-count-after", type=int, required=True)
-    canary.add_argument("--conversation-get-status", type=int, required=True)
-
-    load = subparsers.add_parser(
-        "load-gallery",
-        help="Open Images and load its complete authenticated cursor feed",
-    )
-    load.add_argument("--session", default="browser")
+    prepare.add_argument("--session", default="browser")
 
     run = subparsers.add_parser(
-        "run-batch",
-        help="Delete one confirmed resumable batch of at most 20 conversations",
+        "run-all",
+        help="Delete every pending conversation with the fixed fast settings",
     )
     run.add_argument("--session", default="browser")
     run.add_argument("--confirm-run-id", required=True)
-    run.add_argument("--limit", type=int, default=20)
-    run.add_argument("--minimum-delay", type=float, default=0.8)
-    run.add_argument("--maximum-delay", type=float, default=1.2)
-    run.add_argument("--concurrency", type=int, default=1)
-
-    recovery = subparsers.add_parser(
-        "record-paused-success",
-        help="Record an explicitly verified successful recovery for one paused item",
-    )
-    recovery.add_argument("--http-status", type=int, required=True)
-    recovery.add_argument("--additional-attempts", type=int, required=True)
 
     verify = subparsers.add_parser(
         "verify",
         help="Reload the gallery and reconcile residual conversation ids",
     )
     verify.add_argument("--session", default="browser")
+
+    clear = subparsers.add_parser(
+        "clear-state",
+        help="Remove one explicitly approved, verified zero-residual checkpoint",
+    )
+    clear.add_argument("--confirm-run-id", required=True)
 
     subparsers.add_parser("status", help="Show a sanitized active-run summary")
     return result
@@ -865,32 +908,14 @@ def parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = parser().parse_args()
     try:
-        if args.command == "manifest-from-capture":
-            output = build_manifest(args.session, args.expected_images)
-        elif args.command == "record-canary":
-            output = record_canary(
-                args.delete_http_status,
-                args.image_count_after,
-                args.conversation_get_status,
-            )
-        elif args.command == "load-gallery":
-            output = load_gallery(args.session)
-        elif args.command == "run-batch":
-            output = run_batch(
-                args.session,
-                args.confirm_run_id,
-                args.limit,
-                args.minimum_delay,
-                args.maximum_delay,
-                args.concurrency,
-            )
-        elif args.command == "record-paused-success":
-            output = record_paused_success(
-                args.http_status,
-                args.additional_attempts,
-            )
+        if args.command == "prepare":
+            output = prepare_run(args.session)
+        elif args.command == "run-all":
+            output = run_all(args.session, args.confirm_run_id)
         elif args.command == "verify":
             output = verify_and_reconcile(args.session)
+        elif args.command == "clear-state":
+            output = clear_completed_state(args.confirm_run_id)
         else:
             output = manifest_status()
         print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
