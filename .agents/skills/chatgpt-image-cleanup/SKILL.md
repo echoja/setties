@@ -16,7 +16,7 @@ Delete the chats behind the ChatGPT Images gallery without repeating completed w
 - Keep credentials inside Playwright. Never print or save tokens, cookies, signed URLs, prompts, titles, or image content.
 - After inventory, report exact counts and require one explicit confirmation before calling `run-all`.
 - Use only the fixed fast settings: batches of 20, concurrency 10, and randomized 250–400 ms request starts.
-- Keep the checkpoint until verification reaches zero residual images and the user separately approves its removal.
+- Keep the checkpoint through deletion and reconciliation. After verification reaches zero residual images, remove its metadata automatically; preserve it for paused, failed, or stalled runs.
 
 ## Prepare
 
@@ -73,11 +73,11 @@ python3 <skill-dir>/scripts/cleanup.py verify --session browser
 
 ## Remove state
 
-After successful zero-residual verification, ask whether to remove the checkpoint. Only after approval, run:
+After successful zero-residual verification, remove the checkpoint as the final step using the run ID already confirmed for bulk deletion. Do not require a second confirmation:
 
 ```bash
 python3 <skill-dir>/scripts/cleanup.py clear-state \
   --confirm-run-id <run-id>
 ```
 
-Never delete Playwright browser data as part of checkpoint cleanup.
+Finish only when `state_removed` is true. Never delete Playwright browser data as part of checkpoint cleanup.
