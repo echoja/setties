@@ -14,10 +14,6 @@
       "description": "Codex CLI config"
     },
     {
-      "key": ".codex/slack-notify.py",
-      "description": "Codex Stop hook for Slack notifications"
-    },
-    {
       "key": ".codex/AGENTS.md",
       "description": "User-scope Codex instructions"
     },
