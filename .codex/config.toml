@@ -170,3 +170,11 @@ status_line_use_colors = true
 apps = false
 plugin_hooks = true
 goals = true
+
+# Global completion notifications; the webhook itself stays outside Git.
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'python3 "$HOME/.codex/slack-notify.py"'
+timeout = 15
+statusMessage = "Sending Slack notification"
