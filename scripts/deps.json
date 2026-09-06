@@ -460,13 +460,14 @@
       "depends": [
         "homebrew"
       ],
-      "install": "brew install docker docker-compose colima && brew services start colima && colima start --runtime docker",
+      "install": "brew install docker docker-compose colima && brew services stop colima && ./scripts/bootstrap.py jobs apply -y",
       "notes": [
         "Colima is the chosen container runtime on this machine; Docker Desktop is intentionally not installed.",
         "The Docker CLI comes from Homebrew and talks to the Colima Docker socket/context.",
         "Do NOT install podman/podman-machine \u2014 its krunkit VM does not delegate the cpuset cgroup, which breaks k3d/k3s at bootstrap (fatal: failed to find cpuset cgroup v2).",
         "Do NOT install Docker Desktop as a parallel runtime; it duplicates the VM/runtime layer and consumes extra memory.",
-        "Use `colima status`, `colima start`, and `colima stop` to manage the runtime."
+        "The Setties job com.echoja.colima starts Colima at login and retries every 60 seconds. Do not enable the competing Homebrew service.",
+        "Use `colima status` to inspect the runtime. To keep it stopped for maintenance, run `launchctl bootout gui/$UID/com.echoja.colima` before `colima stop`; re-enable with `./scripts/bootstrap.py jobs apply -y`."
       ]
     },
     {

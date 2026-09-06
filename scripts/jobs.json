@@ -2,6 +2,18 @@
   "$schema": "./jobs.schema.json",
   "jobs": [
     {
+      "label": "com.echoja.colima",
+      "description": "Start Colima at login and retry every minute, safely recovering pre-boot PID files",
+      "script": "scripts/colima-start.sh",
+      "schedule": {
+        "interval": 60
+      },
+      "environment": {
+        "PATH": "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "run_at_load": true
+    },
+    {
       "label": "com.echoja.setties-pull",
       "description": "Daily auto-pull of Setties repo",
       "script": "scripts/auto-pull.sh",
