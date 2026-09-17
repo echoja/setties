@@ -209,6 +209,9 @@ enabled = true
 [plugins."template-creator@openai-primary-runtime"]
 enabled = true
 
+[plugins."app-6a83901dde988191b3f3cefdcc19acfa@openai-curated-remote"]
+enabled = true
+
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "project-name", "git-branch", "context-used", "five-hour-limit", "weekly-limit"]
 status_line_use_colors = true
@@ -218,7 +221,7 @@ status_line_use_colors = true
 "gpt-5.6-sol" = 4
 gpt-6-astra = 4
 [features]
-apps = false
+apps = true
 plugin_hooks = true
 goals = true
 
