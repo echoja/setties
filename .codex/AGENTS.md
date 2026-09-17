@@ -34,10 +34,11 @@
 - Dotfiles and global instruction files are symlinked from sources in `~/setties` into `~/` via `scripts/links.json`.
 - Dependencies are tracked in `scripts/deps.json`.
 - When the user wants to save something to Setties, such as a new dotfile, config change, dependency, or global instruction file:
-  1. Make the appropriate changes in `~/setties` by editing or adding files and updating `scripts/links.json` or `scripts/deps.json` as needed.
-  2. If adding a new symlinked file, register its source path and home-directory target in `scripts/links.json`.
-  3. Run `cd ~/setties && ./v` to verify everything is correct.
-  4. Commit and push with `cd ~/setties && git add -A && git commit -m "<message>" && git push`.
+  1. Fetch the remote and pull before editing anything. The change may already have been made from another machine, and a pre-commit hook blocks commits while the branch is behind.
+  2. Make the appropriate changes in `~/setties` by editing or adding files and updating `scripts/links.json` or `scripts/deps.json` as needed.
+  3. If adding a new symlinked file, register its source path and home-directory target in `scripts/links.json`.
+  4. Run `cd ~/setties && ./v` to verify everything is correct.
+  5. Commit and push with `cd ~/setties && git add -A && git commit -m "<message>" && git push`.
 
 ## Springfall Legacy Article Migration (`~/works/springfall-astro`)
 
