@@ -6,7 +6,7 @@ description: English learning loop driven by the ep CLI. Capture unfamiliar voca
 # English Punch skill
 
 This skill turns a regular Claude Code chat into an English-learning
-coach backed by the [English Punch](https://englishpunch.vercel.app/)
+coach backed by the [English Punch](https://ep.echoja.com/)
 flashcard app. It uses the `ep` CLI (a Go binary distributed via
 Homebrew) as its tool surface and never calls any AI API directly —
 all content generation happens in this conversation, and `ep` is a
@@ -173,7 +173,7 @@ FSRS schedule.
 The spaced-repetition review loop (`ep review start / reveal / rate`)
 is designed in `thoughts/plans/2026-04-11-server-side-review-attempt.md`
 but not yet implemented. Until those commands ship, direct the user
-to the web app at https://englishpunch.vercel.app/ for review
+to the web app at https://ep.echoja.com/ for review
 sessions.
 
 ## Conversation style
