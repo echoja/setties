@@ -333,7 +333,8 @@ export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 # 대화형은 activate 훅으로 cd 할 때마다 버전을 다시 해석한다.
 # 비대화형(스크립트, 에디터, 에이전트 도구)은 그 훅이 돌지 않으므로 shims 를 PATH 맨 앞에 둔다.
 # activate 를 비대화형에서도 하면 셸이 뜬 디렉터리 기준 버전이 박힌 채 바뀌지 않는다.
-if [[ -o interactive ]]; then
+# Claude Code(CLAUDECODE=1)는 대화형 셸로 환경을 한 번 찍어 두고 명령마다 비대화형으로 재사용하므로 shims 를 쓴다.
+if [[ -o interactive && -z "$CLAUDECODE" ]]; then
   eval "$(mise activate zsh)"
 else
   export PATH="$HOME/.local/share/mise/shims:$PATH"
