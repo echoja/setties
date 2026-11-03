@@ -1,42 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(mkdir:*)",
-      "Bash(go:*)",
-      "Write(*)",
-      "Bash(ls:*)",
-      "Bash(git:*)",
-      "Update(*:*)",
-      "Bash(mv:*)",
-      "Bash(echo:*)",
-      "Bash(sed:*)",
-      "Bash(source:*)",
-      "Bash(head:*)",
-      "Bash(tail:*)",
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(pkill:*)",
-      "Bash(touch:*)",
-      "Bash(grep:*)",
-      "Bash(deadcode:*)",
-      "Bash(sqlite3:*)",
-      "Bash(curl:*)",
-      "Bash(rg:*)",
-      "Bash(chmod:*)",
-      "Bash(lsof:*)",
-      "Bash(make:*)",
-      "Bash(PORT=:*)",
-      "Bash(find:*)",
-      "Bash(docker:*)",
-      "Bash(poetry:*)",
-      "Bash(python:*)",
-      "Bash(python3:*)",
-      "Update(*)",
-      "WebSearch",
-      "mcp__open-pencil"
-    ],
-    "deny": []
-  },
   "model": "opus[1m]",
   "hooks": {
     "Stop": [
@@ -56,14 +18,14 @@
     "refreshInterval": 5
   },
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "ralph-loop@claude-plugins-official": false,
     "context7@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "fluent-korean@fluent-korean": true,
+    "frontend-design@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": false,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "swift-lsp@claude-plugins-official": true,
-    "figma@claude-plugins-official": true,
-    "fluent-korean@fluent-korean": true
+    "typescript-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "fluent-korean": {
@@ -76,6 +38,9 @@
   "effortLevel": "xhigh",
   "modelSettings": {
     "claude-fable-5-1": {
+      "effortLevel": "high"
+    },
+    "claude-opus-5-5": {
       "effortLevel": "high"
     }
   },
