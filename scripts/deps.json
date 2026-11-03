@@ -128,7 +128,10 @@
       "label": "codex",
       "kind": "command",
       "target": "codex",
-      "install": "curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh"
+      "install": "curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh",
+      "profiles": [
+        "personal"
+      ]
     },
     {
       "label": "terraform",
@@ -364,7 +367,10 @@
       "depends": [
         "homebrew"
       ],
-      "install": "brew install gemini-cli"
+      "install": "brew install gemini-cli",
+      "profiles": [
+        "personal"
+      ]
     },
     {
       "label": "gh",
@@ -609,7 +615,10 @@
       "depends": [
         "homebrew"
       ],
-      "install": "brew install --cask chatgpt"
+      "install": "brew install --cask chatgpt",
+      "profiles": [
+        "personal"
+      ]
     },
     {
       "label": "claude",
