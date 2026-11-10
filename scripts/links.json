@@ -18,6 +18,10 @@
       "description": "User-scope Codex instructions"
     },
     {
+      "key": ".codex/skills/maintain-repo",
+      "description": "Manually invoked repository maintenance skill"
+    },
+    {
       "key": ".agents/skills/english-punch",
       "description": "English Punch Codex skill"
     },
