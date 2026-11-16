@@ -17,8 +17,9 @@
 
 ## Persistence
 
-- Do not proactively save persistent notes or memories.
-- Only write persistent notes when the user explicitly asks to remember something.
+- Proactively maintain the user's Basana notes during ordinary conversations. Progress reports, changed plans, unfinished work, and newly mentioned tasks authorize relevant note updates without a separate request to save or remember them.
+- Record only supported facts, preserve existing content, and distinguish completed work from work still in progress. Carry unfinished tasks forward when relevant; do not assume missing details or mark an entire task complete from a partial update.
+- Outside this ongoing Basana note-management scope, save persistent notes or memories only when the user explicitly asks.
 - When the user says "remember this" or "기억해줘", update the durable instruction file for the active tool and scope instead of creating an ad hoc memory file: `AGENTS.md` for Codex, `CLAUDE.md` for Claude.
 - In `~/setties`, edit `.codex/AGENTS.md` as the canonical instruction file; `.claude/CLAUDE.md` points to it.
 
