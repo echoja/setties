@@ -1,3 +1,17 @@
+# META_RULE: 규칙 문서 작성 가이드
+
+이 메타 규칙은 다른 개인 규칙, 프로젝트 규칙, 스킬의 규칙보다 우선한다.
+
+- 보편적인 용어 사용 (현학적인 단어, 은어 지양).
+- 줄임말은 업계에서 통용되는 것(`PR`, `API`, `CI` 등)과 `## 용어나 개념` 에 정의된 것만 쓴다. 새 줄임말을 쓰려면 그 섹션에 정의를 먼저 추가한다.
+- 뜻이 분명한 기호 표기(`X`, `+`, `→`)는 쓸 수 있다.
+- 포맷팅은 `코드`만 허용. **굵게**, _기울임_, >인용구 등은 사용하지 말 것.
+- 단언적 표현 지양 ("항상", "절대", "무조건" 등).
+- 규칙 그 자체만 작성하고 배경 설명은 작성하지 않는다. 판단이 필요한 규칙에는 근거를 한 문장까지 붙일 수 있고, 용어나 범위를 좁히는 짧은 예시는 괄호 안에 쓸 수 있다.
+- 도메인 지식을 위한 설명 허용 (예: "ADR 은 Architecture Decision Record 의 약자입니다").
+- 사용자가 "앞으로 ~~해" 또는 "앞으로 ~~하지마" 형태로 말하면 그 내용을 규칙문서에 반영한다.
+- 사용자가 한 말 중 다음에도 같게 적용할 내용이면 "앞으로" 형태가 아니어도 규칙문서에 반영한다.
+
 # User Preferences
 
 ## Language
@@ -13,8 +27,8 @@
 
 ## Writing and Rule Authoring
 
-- For user-facing documents, follow `~/.agents/skills/fluent-korean/references/personal-writing-style.md` and consult `writing-examples.md` in that directory when useful. Existing language, file-link, source-preservation, and verification requirements take precedence.
-- When creating or editing instruction files, follow `~/.agents/skills/fluent-korean/references/rule-authoring.md`. Update the canonical file for the active tool and scope; preserve current authorization and persistence boundaries.
+- For documents, follow `~/.agents/skills/fluent-korean/references/personal-writing-style.md` and consult `writing-examples.md` in that directory when useful. This applies regardless of audience or visibility. Apply META_RULE first when writing or editing instruction documents.
+- When creating or editing instruction files, apply the META_RULE section above. `~/.agents/skills/fluent-korean/references/rule-authoring.md` points to that authoritative section. Update the canonical rule document for the active tool and scope.
 
 ## Source Verification
 
@@ -25,7 +39,7 @@
 
 - Proactively maintain the user's Basana notes during ordinary conversations. Progress reports, changed plans, unfinished work, and newly mentioned tasks authorize relevant note updates without a separate request to save or remember them.
 - Record only supported facts, preserve existing content, and distinguish completed work from work still in progress. Carry unfinished tasks forward when relevant; do not assume missing details or mark an entire task complete from a partial update.
-- Outside this ongoing Basana note-management scope, save persistent notes or memories only when the user explicitly asks.
+- Record reusable user directions in the relevant rule document under META_RULE, including directions intended to apply again even without an explicit request to remember them.
 - When the user says "remember this" or "기억해줘", update the durable instruction file for the active tool and scope instead of creating an ad hoc memory file: `AGENTS.md` for Codex, `CLAUDE.md` for Claude.
 - In `~/setties`, edit `.codex/AGENTS.md` as the canonical instruction file; `.claude/CLAUDE.md` points to it.
 

@@ -12,7 +12,7 @@ metadata:
 
 아래 본문은 snflkd/fluent-korean의 코딩용 출력 스타일 원문이다. Claude Code 전용 frontmatter는 Codex 스킬 metadata로 교체했다. 원문의 예시와 적용 제외 범위는 유지한다.
 
-산출물을 작성할 때는 [개인 글쓰기 스타일](references/personal-writing-style.md)도 함께 적용한다. 문장 선택이 어려우면 [표현 예시](references/writing-examples.md)를 참고한다. 규칙 문서를 편집할 때는 [규칙 작성 지침](references/rule-authoring.md)을 따른다. 현재 사용자 지시와 프로젝트 규칙이 이 문서들보다 우선한다.
+독자와 공개 여부에 관계없이 문서를 작성할 때는 [개인 글쓰기 스타일](references/personal-writing-style.md)도 함께 적용한다. 문장 선택이 어려우면 [표현 예시](references/writing-examples.md)를 참고한다. 규칙 문서를 편집할 때는 [규칙 작성 지침](references/rule-authoring.md)을 따른다. 규칙문서 작성에는 정본 `META_RULE`을 우선한다.
 
 당신은 한국어를 활용해야 하는 상황에 있다면 본 문서에 제시된 지침들을 준수해야 합니다. 그럼으로써 의사소통의 효율성을 높일 수 있습니다. 이 지침들은, 의미가 명확하며 비교적 가독성이 높고 안정적인 구조를 지닌 한국어 문장을 출력하는 방법을 자세히 설명합니다. 인용, 코드, 코드 주석에는 이 지침들을 적용하지 않습니다.
 
