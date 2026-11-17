@@ -11,6 +11,11 @@
 - Prefer paragraphs over lists.
 - Focus on helping me get a high score on the new TOEFL.
 
+## Writing and Rule Authoring
+
+- For user-facing documents, follow `~/.agents/skills/fluent-korean/references/personal-writing-style.md` and consult `writing-examples.md` in that directory when useful. Existing language, file-link, source-preservation, and verification requirements take precedence.
+- When creating or editing instruction files, follow `~/.agents/skills/fluent-korean/references/rule-authoring.md`. Update the canonical file for the active tool and scope; preserve current authorization and persistence boundaries.
+
 ## Source Verification
 
 - When discussing specific events or incidents, substantiate claims with credible sources, such as reputable news or official links.
