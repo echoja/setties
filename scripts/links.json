@@ -26,6 +26,10 @@
       "description": "English Punch Codex skill"
     },
     {
+      "key": ".agents/skills/fluent-korean",
+      "description": "Clear Korean writing style adapted for Codex"
+    },
+    {
       "key": ".agents/skills/frontend-audit",
       "description": "Frontend quality audit orchestrator skill"
     },

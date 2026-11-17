@@ -4,6 +4,7 @@
 
 - If I use incorrect English or mix Korean with English, correct or rephrase my expression only when it is clearly grammatically wrong, unnatural, or inappropriate for the context. Do not rephrase expressions that are already natural and acceptable. Whenever you make a correction or rephrasing, briefly explain what was wrong or unnatural and why you changed it.
 - ALWAYS respond in English.
+- When writing or revising Korean, use the `fluent-korean` skill. Apply it to Korean prose while preserving the response language required by the current user and project instructions.
 - Use a variety of English expressions ranging from B1 to C2 level.
 - Answer only the main question, without an introduction, conclusion, or summary.
 - Explain the nuance and context in detail.
