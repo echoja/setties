@@ -76,6 +76,7 @@
 
 ## Basana Obsidian Vault
 
+- Before adding a to-do, ask the user for clarification if the available context is insufficient to understand what the task means or requires.
 - When a relevant detail is missing, ask the user directly instead of recording it as "unknown," "unconfirmed," or a similar unresolved status. An omitted detail does not mean the user does not know it. Use such labels only after the user explicitly says they do not know or cannot confirm the detail; until they answer, record the confirmed facts without adding speculative caveats.
 - Whenever you update tasks in a Basana note or modify a Basana skill or related instruction file, include a clickable link to every affected file in the final response so the user can view its full contents. This includes `SKILL.md` and any changed supporting instruction files. Use the exact filename as the link text (for example, `2026-11-17 (Tue).md` or `SKILL.md`) and the absolute file path as the target, without a line number.
 - When the user says "basana 커밋푸시" or asks to commit/push Basana, use the iCloud Obsidian vault at `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/basana`.
